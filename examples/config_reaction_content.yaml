@@ -1,0 +1,57 @@
+# Auto Edit Configuration - Reaction Content
+# Optimized for reaction streams and commentary
+
+active_mode: general_interest
+
+signals:
+  # Heavily weighted towards reactions
+  audio_voice_analysis:
+    enabled: true
+    weight: 1.5  # Highest priority
+    detect_laughter: true
+    detect_shouting: true
+    detect_excitement: true
+
+  facecam_emotion:
+    enabled: true
+    weight: 1.2  # High priority for visible reactions
+    facecam_region: [0.0, 0.7, 0.25, 1.0]
+
+  # Reduced game audio importance
+  audio_game_peaks:
+    enabled: true
+    weight: 0.5  # Lower weight
+    peak_threshold: -15  # Higher threshold (less sensitive)
+
+  visual_activity:
+    enabled: true
+    weight: 0.6
+    scene_change_threshold: 30
+    motion_threshold: 0.3
+
+  silence_to_chaos:
+    enabled: true
+    weight: 0.9  # Good for unexpected reactions
+    silence_threshold: -40
+    chaos_threshold: -15
+
+  chat_density:
+    enabled: false
+    weight: 0.7
+
+output:
+  target_duration_minutes: 25  # Longer for reaction content
+  min_clip_length_seconds: 4   # Slightly longer clips
+  max_clip_length_seconds: 60  # Allow longer moments
+  fps: 30
+  resolution: [1280, 720]
+  codec: libx264
+  audio_codec: aac
+  bitrate: "4M"
+
+selection:
+  interest_threshold: 0.55
+  cluster_nearby_moments: true
+  cluster_window_seconds: 90  # Larger clusters for reactions
+  include_context_before_seconds: 6  # More setup
+  include_context_after_seconds: 4   # More follow-through

@@ -1,0 +1,56 @@
+# Auto Edit Configuration - Horror Gaming
+# Optimized for horror games with jump scares and suspense
+
+active_mode: general_interest
+
+signals:
+  # Silence to chaos is key for horror
+  silence_to_chaos:
+    enabled: true
+    weight: 1.5  # Highest priority for jump scares
+    silence_threshold: -45  # More sensitive to silence
+    chaos_threshold: -12    # Catch loud screams
+
+  audio_voice_analysis:
+    enabled: true
+    weight: 1.3  # Reactions are important
+    detect_laughter: true
+    detect_shouting: true
+    detect_excitement: true
+
+  audio_game_peaks:
+    enabled: true
+    weight: 0.9
+    peak_threshold: -18
+
+  visual_activity:
+    enabled: true
+    weight: 0.7  # Less important in horror
+    scene_change_threshold: 25  # More sensitive to changes
+    motion_threshold: 0.25
+
+  facecam_emotion:
+    enabled: true
+    weight: 1.0  # Catch scared reactions
+    facecam_region: [0.0, 0.7, 0.25, 1.0]
+
+  chat_density:
+    enabled: false
+    weight: 0.7
+
+output:
+  target_duration_minutes: 18
+  min_clip_length_seconds: 5   # Need setup for scares
+  max_clip_length_seconds: 50
+  fps: 30
+  resolution: [1280, 720]
+  codec: libx264
+  audio_codec: aac
+  bitrate: "4M"
+
+selection:
+  interest_threshold: 0.60
+  cluster_nearby_moments: true
+  cluster_window_seconds: 45  # Shorter clusters
+  include_context_before_seconds: 8  # Crucial for suspense
+  include_context_after_seconds: 3

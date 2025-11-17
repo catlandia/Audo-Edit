@@ -1,0 +1,110 @@
+# Auto Edit - Default Configuration
+
+# Editing Modes
+modes:
+  # My Style Mode: Uses learned personal preferences
+  my_style:
+    enabled: false  # Requires trained model
+    model_path: ./models/personal_style.pkl
+
+  # General Interest Mode: Universal engagement signals
+  general_interest:
+    enabled: true
+
+  # Hybrid Mode: Combination of both
+  hybrid:
+    enabled: false
+    personal_weight: 0.6
+    general_weight: 0.4
+
+# Active Mode (my_style, general_interest, or hybrid)
+active_mode: general_interest
+
+# Signal Sources (toggleable)
+signals:
+  # Core Signals (Recommended)
+  audio_voice_analysis:
+    enabled: true
+    weight: 1.0
+    detect_laughter: true
+    detect_shouting: true
+    detect_excitement: true
+
+  audio_game_peaks:
+    enabled: true
+    weight: 0.8
+    peak_threshold: -20  # dB
+
+  visual_activity:
+    enabled: true
+    weight: 0.9
+    scene_change_threshold: 30
+    motion_threshold: 0.3
+
+  # Optional Signals
+  chat_density:
+    enabled: false  # Enable only with active chat
+    weight: 0.7
+    min_messages_per_minute: 5
+    region: [0.7, 0.0, 1.0, 1.0]  # Right side of screen [x1, y1, x2, y2]
+
+  facecam_emotion:
+    enabled: false  # Enable if using webcam
+    weight: 0.6
+    facecam_region: [0.0, 0.7, 0.25, 1.0]  # Bottom left [x1, y1, x2, y2]
+
+  silence_to_chaos:
+    enabled: true
+    weight: 0.8
+    silence_threshold: -40  # dB
+    chaos_threshold: -15  # dB
+
+  # Future signals (placeholders)
+  alert_detection:
+    enabled: false
+    weight: 1.2
+
+  game_api_events:
+    enabled: false
+    weight: 1.0
+
+# Output Settings
+output:
+  target_duration_minutes: 20  # Target highlight length
+  min_clip_length_seconds: 3
+  max_clip_length_seconds: 45
+  transition_duration_seconds: 0.5
+  fps: 30
+  resolution: [1280, 720]  # Output resolution
+  codec: libx264
+  audio_codec: aac
+  bitrate: "4M"
+
+# Processing Settings
+processing:
+  chunk_size_seconds: 30  # Analyze in chunks
+  overlap_seconds: 2
+  multiprocessing: true
+  max_workers: 4
+
+# Clip Selection
+selection:
+  interest_threshold: 0.6  # 0-1 score threshold
+  cluster_nearby_moments: true
+  cluster_window_seconds: 60
+  include_context_before_seconds: 5  # Lead-up to moment
+  include_context_after_seconds: 3  # Follow-through
+
+# Style Learning (Phase 3)
+style_learning:
+  enabled: false
+  training_examples_dir: ./training_data
+  min_examples_required: 5
+  model_update_frequency: 5  # Retrain every N new examples
+  features:
+    - clip_duration_patterns
+    - cutting_rhythm
+    - moment_selection
+    - pacing_flow
+    - transition_preferences
+    - narrative_structure

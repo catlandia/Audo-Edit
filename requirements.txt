@@ -1,0 +1,36 @@
+# Auto Edit - Video Editing Application Dependencies
+
+# Video Processing
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0
+ffmpeg-python>=0.2.0
+moviepy>=1.0.3
+
+# Audio Analysis
+librosa>=0.10.0
+soundfile>=0.12.0
+pydub>=0.25.1
+
+# Machine Learning & Data Science
+numpy>=1.24.0
+scipy>=1.11.0
+scikit-learn>=1.3.0
+torch>=2.0.0
+transformers>=4.30.0
+
+# Computer Vision & Image Processing
+pillow>=10.0.0
+scikit-image>=0.21.0
+
+# Data Handling
+pandas>=2.0.0
+h5py>=3.9.0
+
+# Configuration & CLI
+pyyaml>=6.0
+click>=8.1.0
+tqdm>=4.65.0
+colorama>=0.4.6
+
+# Utilities
+python-dotenv>=1.0.0

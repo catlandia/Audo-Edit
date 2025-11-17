@@ -1,0 +1,59 @@
+# Auto Edit Configuration - Large Stream Setup
+# For streams with active chat and high engagement
+
+active_mode: general_interest
+
+signals:
+  # Core signals
+  audio_voice_analysis:
+    enabled: true
+    weight: 1.0
+    detect_laughter: true
+    detect_shouting: true
+    detect_excitement: true
+
+  audio_game_peaks:
+    enabled: true
+    weight: 0.8
+    peak_threshold: -20
+
+  visual_activity:
+    enabled: true
+    weight: 0.9
+    scene_change_threshold: 30
+    motion_threshold: 0.3
+
+  silence_to_chaos:
+    enabled: true
+    weight: 0.8
+    silence_threshold: -40
+    chaos_threshold: -15
+
+  # Chat enabled for large streams
+  chat_density:
+    enabled: true
+    weight: 0.8  # Important for engagement moments
+    min_messages_per_minute: 10
+    region: [0.7, 0.0, 1.0, 1.0]  # Right 30% of screen
+
+  facecam_emotion:
+    enabled: true
+    weight: 0.7
+    facecam_region: [0.0, 0.7, 0.25, 1.0]
+
+output:
+  target_duration_minutes: 20
+  min_clip_length_seconds: 3
+  max_clip_length_seconds: 40
+  fps: 30
+  resolution: [1920, 1080]  # Higher quality for larger streams
+  codec: libx264
+  audio_codec: aac
+  bitrate: "6M"
+
+selection:
+  interest_threshold: 0.65  # Higher threshold (more selective)
+  cluster_nearby_moments: true
+  cluster_window_seconds: 60
+  include_context_before_seconds: 4
+  include_context_after_seconds: 2

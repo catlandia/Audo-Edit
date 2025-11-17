@@ -1,0 +1,57 @@
+# Auto Edit Configuration - Small Stream Setup
+# For streams with minimal or no chat activity
+
+active_mode: general_interest
+
+signals:
+  # Core signals - always enabled
+  audio_voice_analysis:
+    enabled: true
+    weight: 1.2  # Boost voice reactions
+    detect_laughter: true
+    detect_shouting: true
+    detect_excitement: true
+
+  audio_game_peaks:
+    enabled: true
+    weight: 1.0
+    peak_threshold: -20
+
+  visual_activity:
+    enabled: true
+    weight: 0.9
+    scene_change_threshold: 30
+    motion_threshold: 0.3
+
+  silence_to_chaos:
+    enabled: true
+    weight: 0.8
+    silence_threshold: -40
+    chaos_threshold: -15
+
+  # Optional signals - disabled for small streams
+  chat_density:
+    enabled: false  # Not enough chat activity
+    weight: 0.7
+
+  facecam_emotion:
+    enabled: true  # Enable if you use webcam
+    weight: 0.7
+    facecam_region: [0.0, 0.7, 0.25, 1.0]
+
+output:
+  target_duration_minutes: 20
+  min_clip_length_seconds: 3
+  max_clip_length_seconds: 45
+  fps: 30
+  resolution: [1280, 720]
+  codec: libx264
+  audio_codec: aac
+  bitrate: "4M"
+
+selection:
+  interest_threshold: 0.55  # Slightly lower for smaller streams
+  cluster_nearby_moments: true
+  cluster_window_seconds: 60
+  include_context_before_seconds: 5
+  include_context_after_seconds: 3
