@@ -42,6 +42,9 @@ class AutoEditGUI:
         self.force_all_sounds = tk.BooleanVar(value=False)
         self.force_all_music = tk.BooleanVar(value=False)
 
+        # Image opacity control (0-100%)
+        self.image_opacity = tk.IntVar(value=100)
+
         self.processing = False
         self.process = None
 
@@ -75,6 +78,9 @@ class AutoEditGUI:
                     self.force_all_images.set(config.get('assets', {}).get('force_all_images', False))
                     self.force_all_sounds.set(config.get('assets', {}).get('force_all_sounds', False))
                     self.force_all_music.set(config.get('assets', {}).get('force_all_music', False))
+
+                    # Load image opacity
+                    self.image_opacity.set(config.get('assets', {}).get('image_opacity', 100))
         except Exception as e:
             print(f"Warning: Could not load config: {e}")
 
@@ -104,6 +110,7 @@ class AutoEditGUI:
                 config['assets']['force_all_images'] = self.force_all_images.get()
                 config['assets']['force_all_sounds'] = self.force_all_sounds.get()
                 config['assets']['force_all_music'] = self.force_all_music.get()
+                config['assets']['image_opacity'] = self.image_opacity.get()
 
                 # Save editing mode
                 config['active_mode'] = self.editing_mode.get()
@@ -340,9 +347,29 @@ class AutoEditGUI:
         ttk.Button(images_row, text="Browse...", command=self.browse_images_folder).pack(side=tk.LEFT, padx=2)
         ttk.Checkbutton(images_row, text="Force ALL", variable=self.force_all_images).pack(side=tk.LEFT, padx=5)
 
+        # Image opacity slider
+        opacity_row = ttk.Frame(folders_frame)
+        opacity_row.pack(fill=tk.X, pady=(5, 2))
+        ttk.Label(opacity_row, text="Image Opacity:", width=12).pack(side=tk.LEFT)
+        opacity_label = ttk.Label(opacity_row, text=f"{self.image_opacity.get()}%", width=5)
+        opacity_label.pack(side=tk.RIGHT, padx=5)
+
+        def update_opacity_label(val):
+            opacity_label.config(text=f"{int(float(val))}%")
+
+        opacity_slider = ttk.Scale(
+            opacity_row,
+            from_=0,
+            to=100,
+            variable=self.image_opacity,
+            orient=tk.HORIZONTAL,
+            command=update_opacity_label
+        )
+        opacity_slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
         ttk.Label(
             folders_frame,
-            text="Tip: 'Force ALL' makes every file in that folder required (ignores pool/required subfolders)",
+            text="Tip: 'Force ALL' makes every file required. Opacity: 0%=invisible, 100%=solid",
             font=("Arial", 8),
             foreground="gray"
         ).pack(anchor=tk.W, pady=(5, 0))

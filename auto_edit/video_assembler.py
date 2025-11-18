@@ -689,12 +689,15 @@ class VideoAssembler:
             # Convert overlay to numpy array
             overlay_array = np.array(overlay)
 
+            # Get global opacity setting from config (0-100%)
+            global_opacity = self.config.get('assets', {}).get('image_opacity', 100) / 100.0
+
             # Extract alpha channel
             if overlay_array.shape[2] == 4:
-                alpha = overlay_array[:, :, 3] / 255.0
+                alpha = (overlay_array[:, :, 3] / 255.0) * global_opacity
                 overlay_rgb = overlay_array[:, :, :3]
             else:
-                alpha = np.ones((overlay_height, overlay_width))
+                alpha = np.ones((overlay_height, overlay_width)) * global_opacity
                 overlay_rgb = overlay_array
 
             # Extract region of interest from frame
