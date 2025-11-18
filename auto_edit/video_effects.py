@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import ffmpeg
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import logging
 from tqdm import tqdm
 

@@ -173,14 +173,14 @@ class AutoEditGUI:
         ttk.Entry(input_frame, textvariable=self.video_path, width=60).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         ttk.Button(input_frame, text="Browse...", command=self.browse_video).pack(side=tk.LEFT)
 
-        # Output location (optional)
-        output_frame = ttk.LabelFrame(parent, text="Output Location (Optional)", padding="10")
+        # Output folder (optional)
+        output_frame = ttk.LabelFrame(parent, text="Output Folder (Optional)", padding="10")
         output_frame.pack(fill=tk.X, pady=5)
 
         ttk.Entry(output_frame, textvariable=self.output_path, width=60).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-        ttk.Button(output_frame, text="Browse...", command=self.browse_output).pack(side=tk.LEFT)
+        ttk.Button(output_frame, text="Choose Folder...", command=self.browse_output).pack(side=tk.LEFT)
 
-        hint_label = ttk.Label(output_frame, text="Leave empty to use default output folder", font=("Arial", 8), foreground="gray")
+        hint_label = ttk.Label(output_frame, text="Leave empty to use default output folder, or choose a folder to save there", font=("Arial", 8), foreground="gray")
         hint_label.pack(anchor=tk.W, pady=(5, 0))
 
         # Duration settings
@@ -340,15 +340,13 @@ To edit advanced settings:
             self.log(f"Selected video: {filename}")
 
     def browse_output(self):
-        """Browse for output location"""
-        filename = filedialog.asksaveasfilename(
-            title="Save Highlight Video As",
-            defaultextension=".mp4",
-            filetypes=[("MP4 video", "*.mp4"), ("All files", "*.*")]
+        """Browse for output folder"""
+        folder = filedialog.askdirectory(
+            title="Choose Output Folder"
         )
-        if filename:
-            self.output_path.set(filename)
-            self.log(f"Output path: {filename}")
+        if folder:
+            self.output_path.set(folder)
+            self.log(f"Output folder: {folder}")
 
     def open_output_folder(self):
         """Open the output folder in file explorer"""
@@ -412,7 +410,13 @@ To edit advanced settings:
 
         # Add output path if specified
         if self.output_path.get():
-            cmd.extend(["-o", self.output_path.get()])
+            output_path = self.output_path.get()
+            # Check if it's a directory or a file path
+            if Path(output_path).is_dir():
+                # It's a folder - create filename in that folder
+                video_name = Path(self.video_path.get()).stem
+                output_path = str(Path(output_path) / f"{video_name}_highlights.mp4")
+            cmd.extend(["-o", output_path])
 
         # Add flags
         if self.preview_mode.get():
