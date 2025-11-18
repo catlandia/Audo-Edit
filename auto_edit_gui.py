@@ -55,6 +55,9 @@ class AutoEditGUI:
         # Setup UI
         self.setup_ui()
 
+        # Update button states after UI is setup
+        self.update_all_toggle_buttons()
+
     def load_config(self):
         """Load configuration from config.yaml"""
         try:
@@ -250,17 +253,21 @@ class AutoEditGUI:
         options_frame = ttk.LabelFrame(parent, text="Quick Options", padding="10")
         options_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Checkbutton(
-            options_frame,
-            text="Preview Mode (Top 5 clips only - fast)",
-            variable=self.preview_mode
-        ).pack(anchor=tk.W, pady=2)
+        # Preview mode toggle button
+        preview_row = ttk.Frame(options_frame)
+        preview_row.pack(fill=tk.X, pady=2)
+        ttk.Label(preview_row, text="Preview Mode (Top 5 clips only - fast):").pack(side=tk.LEFT, padx=(0, 10))
+        self.preview_btn = tk.Button(preview_row, text="OFF", command=self.toggle_preview_mode,
+                                     width=10, relief=tk.RAISED, bg="#f0f0f0")
+        self.preview_btn.pack(side=tk.LEFT)
 
-        ttk.Checkbutton(
-            options_frame,
-            text="Verbose Output (Show detailed progress)",
-            variable=self.verbose_mode
-        ).pack(anchor=tk.W, pady=2)
+        # Verbose mode toggle button
+        verbose_row = ttk.Frame(options_frame)
+        verbose_row.pack(fill=tk.X, pady=2)
+        ttk.Label(verbose_row, text="Verbose Output (Show detailed progress):").pack(side=tk.LEFT, padx=(0, 10))
+        self.verbose_btn = tk.Button(verbose_row, text="OFF", command=self.toggle_verbose_mode,
+                                     width=10, relief=tk.RAISED, bg="#f0f0f0")
+        self.verbose_btn.pack(side=tk.LEFT)
 
         # Editing Mode
         mode_frame = ttk.LabelFrame(parent, text="Editing Mode", padding="10")
@@ -293,17 +300,21 @@ class AutoEditGUI:
         features_frame = ttk.LabelFrame(parent, text="Features", padding="10")
         features_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Checkbutton(
-            features_frame,
-            text="🎭 Enable Memes (Automatic meme insertion at funny moments)",
-            variable=self.memes_enabled
-        ).pack(anchor=tk.W, pady=2)
+        # Memes toggle button
+        memes_row = ttk.Frame(features_frame)
+        memes_row.pack(fill=tk.X, pady=2)
+        ttk.Label(memes_row, text="Memes (Automatic meme insertion at funny moments):").pack(side=tk.LEFT, padx=(0, 10))
+        self.memes_btn = tk.Button(memes_row, text="OFF", command=self.toggle_memes,
+                                   width=10, relief=tk.RAISED, bg="#f0f0f0")
+        self.memes_btn.pack(side=tk.LEFT)
 
-        ttk.Checkbutton(
-            features_frame,
-            text="🎵 Enable Custom Assets (Music, sounds, images from folders)",
-            variable=self.assets_enabled
-        ).pack(anchor=tk.W, pady=2)
+        # Assets toggle button
+        assets_row = ttk.Frame(features_frame)
+        assets_row.pack(fill=tk.X, pady=2)
+        ttk.Label(assets_row, text="Custom Assets (Music, sounds, images from folders):").pack(side=tk.LEFT, padx=(0, 10))
+        self.assets_btn = tk.Button(assets_row, text="OFF", command=self.toggle_assets,
+                                    width=10, relief=tk.RAISED, bg="#f0f0f0")
+        self.assets_btn.pack(side=tk.LEFT)
 
         ttk.Label(
             features_frame,
@@ -327,25 +338,31 @@ class AutoEditGUI:
         sounds_row = ttk.Frame(folders_frame)
         sounds_row.pack(fill=tk.X, pady=2)
         ttk.Label(sounds_row, text="Sounds:", width=10).pack(side=tk.LEFT)
-        ttk.Entry(sounds_row, textvariable=self.sounds_folder, width=30).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Entry(sounds_row, textvariable=self.sounds_folder, width=25).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         ttk.Button(sounds_row, text="Browse...", command=self.browse_sounds_folder).pack(side=tk.LEFT, padx=2)
-        ttk.Checkbutton(sounds_row, text="Force ALL", variable=self.force_all_sounds).pack(side=tk.LEFT, padx=5)
+        self.force_sounds_btn = tk.Button(sounds_row, text="Force ALL: OFF", command=self.toggle_force_sounds,
+                                         width=15, relief=tk.RAISED, bg="#f0f0f0")
+        self.force_sounds_btn.pack(side=tk.LEFT, padx=5)
 
         # Music folder
         music_row = ttk.Frame(folders_frame)
         music_row.pack(fill=tk.X, pady=2)
         ttk.Label(music_row, text="Music:", width=10).pack(side=tk.LEFT)
-        ttk.Entry(music_row, textvariable=self.music_folder, width=30).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Entry(music_row, textvariable=self.music_folder, width=25).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         ttk.Button(music_row, text="Browse...", command=self.browse_music_folder).pack(side=tk.LEFT, padx=2)
-        ttk.Checkbutton(music_row, text="Force ALL", variable=self.force_all_music).pack(side=tk.LEFT, padx=5)
+        self.force_music_btn = tk.Button(music_row, text="Force ALL: OFF", command=self.toggle_force_music,
+                                        width=15, relief=tk.RAISED, bg="#f0f0f0")
+        self.force_music_btn.pack(side=tk.LEFT, padx=5)
 
         # Images folder
         images_row = ttk.Frame(folders_frame)
         images_row.pack(fill=tk.X, pady=2)
         ttk.Label(images_row, text="Images:", width=10).pack(side=tk.LEFT)
-        ttk.Entry(images_row, textvariable=self.images_folder, width=30).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Entry(images_row, textvariable=self.images_folder, width=25).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         ttk.Button(images_row, text="Browse...", command=self.browse_images_folder).pack(side=tk.LEFT, padx=2)
-        ttk.Checkbutton(images_row, text="Force ALL", variable=self.force_all_images).pack(side=tk.LEFT, padx=5)
+        self.force_images_btn = tk.Button(images_row, text="Force ALL: OFF", command=self.toggle_force_images,
+                                         width=15, relief=tk.RAISED, bg="#f0f0f0")
+        self.force_images_btn.pack(side=tk.LEFT, padx=5)
 
         # Image opacity slider
         opacity_row = ttk.Frame(folders_frame)
@@ -519,6 +536,75 @@ To edit advanced settings:
         if folder:
             self.images_folder.set(folder)
             self.log(f"Images folder: {folder}")
+
+    def toggle_preview_mode(self):
+        """Toggle preview mode"""
+        current = self.preview_mode.get()
+        self.preview_mode.set(not current)
+        self.update_simple_toggle_button(self.preview_btn, self.preview_mode.get())
+
+    def toggle_verbose_mode(self):
+        """Toggle verbose mode"""
+        current = self.verbose_mode.get()
+        self.verbose_mode.set(not current)
+        self.update_simple_toggle_button(self.verbose_btn, self.verbose_mode.get())
+
+    def toggle_memes(self):
+        """Toggle memes feature"""
+        current = self.memes_enabled.get()
+        self.memes_enabled.set(not current)
+        self.update_simple_toggle_button(self.memes_btn, self.memes_enabled.get())
+
+    def toggle_assets(self):
+        """Toggle custom assets feature"""
+        current = self.assets_enabled.get()
+        self.assets_enabled.set(not current)
+        self.update_simple_toggle_button(self.assets_btn, self.assets_enabled.get())
+
+    def toggle_force_sounds(self):
+        """Toggle force all sounds setting"""
+        current = self.force_all_sounds.get()
+        self.force_all_sounds.set(not current)
+        self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
+
+    def toggle_force_music(self):
+        """Toggle force all music setting"""
+        current = self.force_all_music.get()
+        self.force_all_music.set(not current)
+        self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
+
+    def toggle_force_images(self):
+        """Toggle force all images setting"""
+        current = self.force_all_images.get()
+        self.force_all_images.set(not current)
+        self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
+
+    def update_simple_toggle_button(self, button, state):
+        """Update simple toggle button appearance based on state"""
+        if state:
+            button.config(text="ON", relief=tk.SUNKEN, bg="#90EE90")
+        else:
+            button.config(text="OFF", relief=tk.RAISED, bg="#f0f0f0")
+
+    def update_toggle_button(self, button, state):
+        """Update toggle button appearance based on state"""
+        if state:
+            button.config(text="Force ALL: ON", relief=tk.SUNKEN, bg="#90EE90")
+        else:
+            button.config(text="Force ALL: OFF", relief=tk.RAISED, bg="#f0f0f0")
+
+    def update_all_toggle_buttons(self):
+        """Update all toggle buttons to match current state"""
+        # Simple toggles
+        self.update_simple_toggle_button(self.preview_btn, self.preview_mode.get())
+        self.update_simple_toggle_button(self.verbose_btn, self.verbose_mode.get())
+        self.update_simple_toggle_button(self.memes_btn, self.memes_enabled.get())
+        self.update_simple_toggle_button(self.assets_btn, self.assets_enabled.get())
+
+        # Force ALL toggles
+        self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
+        self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
+        self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
 
     def open_output_folder(self):
         """Open the output folder in file explorer"""
