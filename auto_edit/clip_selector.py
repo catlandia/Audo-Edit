@@ -228,9 +228,13 @@ class ClipSelector:
             clip_end = min(video_duration, timestamp + max_clip_length)
 
             # Adjust based on signal durations
-            if signals:
-                signal_end = max(s.timestamp + s.duration for s in signals)
-                clip_end = min(clip_end, signal_end + context_after)
+            if signals and len(signals) > 0:
+                try:
+                    signal_end = max(s.timestamp + s.duration for s in signals)
+                    clip_end = min(clip_end, signal_end + context_after)
+                except ValueError:
+                    # Empty signals list
+                    pass
 
             clip_duration = clip_end - clip_start
 

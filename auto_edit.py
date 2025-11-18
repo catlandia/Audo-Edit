@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group()
-@click.version_option(version='0.1.0')
+@click.version_option(version='0.2.0')
 def cli():
     """Auto Edit - Automated Stream VOD Highlight Editor"""
     pass
@@ -118,11 +118,19 @@ def edit(input_video: str, output: Optional[str], duration: int, mode: str,
             )
         else:
             print_info(f"Assembling {len(clips)} clips...")
-            output_path = video_assembler.assemble_video(
+            output_path, thumbnails, sound_clips = video_assembler.assemble_video(
                 str(video_path),
                 clips,
-                output_path=output
+                output_path=output,
+                audio=audio,
+                sr=sr
             )
+
+            # Report on extracted thumbnails and sounds
+            if thumbnails:
+                print_success(f"✓ {len(thumbnails)} thumbnails extracted → output/thumbnails/")
+            if sound_clips:
+                print_success(f"✓ {len(sound_clips)} sound clips extracted → output/sounds/")
 
         # Export clip list
         clip_list_path = video_assembler.export_clip_list(clips)

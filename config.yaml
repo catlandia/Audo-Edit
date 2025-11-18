@@ -80,6 +80,20 @@ output:
   audio_codec: aac
   bitrate: "4M"
 
+  # Thumbnail extraction
+  extract_thumbnails: true  # Auto-extract thumbnails from clips
+  extract_best_frames: false  # Extract visually best frame from each clip (slower)
+
+  # Sound extraction
+  extract_sounds: true  # Auto-extract audio clips from best moments
+  max_sound_clips: 10  # Maximum number of sound clips to extract
+
+# Thumbnail Settings
+thumbnails:
+  width: 1280
+  height: 720
+  quality: 90  # JPEG quality (0-100)
+
 # Processing Settings
 processing:
   chunk_size_seconds: 30  # Analyze in chunks

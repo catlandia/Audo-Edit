@@ -47,6 +47,9 @@ class VideoProcessor:
         # Open video with OpenCV for metadata
         cap = cv2.VideoCapture(str(video_path))
 
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video file: {video_path}")
+
         metadata = {
             'path': str(video_path),
             'fps': cap.get(cv2.CAP_PROP_FPS),
@@ -54,6 +57,12 @@ class VideoProcessor:
             'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
             'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
         }
+
+        # Validate metadata
+        if metadata['fps'] <= 0:
+            raise ValueError(f"Invalid FPS ({metadata['fps']}) in video: {video_path}")
+        if metadata['frame_count'] <= 0:
+            raise ValueError(f"Invalid frame count ({metadata['frame_count']}) in video: {video_path}")
 
         metadata['duration_seconds'] = metadata['frame_count'] / metadata['fps']
         metadata['duration_hours'] = metadata['duration_seconds'] / 3600
@@ -111,11 +120,16 @@ class VideoProcessor:
         logger.info(f"Loading audio: {audio_path}")
         audio, sample_rate = librosa.load(audio_path, sr=sr, mono=False)
 
+        # Validate sample rate
+        if sample_rate <= 0:
+            raise ValueError(f"Invalid sample rate: {sample_rate}")
+
         # If stereo, keep both channels
         if len(audio.shape) == 1:
             audio = audio.reshape(1, -1)
 
-        logger.info(f"Audio loaded: {audio.shape[1] / sample_rate:.2f}s, "
+        duration = audio.shape[1] / sample_rate if sample_rate > 0 else 0
+        logger.info(f"Audio loaded: {duration:.2f}s, "
                    f"{audio.shape[0]} channels, {sample_rate} Hz")
 
         return audio, sample_rate
@@ -132,14 +146,22 @@ class VideoProcessor:
             Frame as numpy array (BGR)
         """
         cap = cv2.VideoCapture(str(video_path))
+
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video: {video_path}")
+
         fps = cap.get(cv2.CAP_PROP_FPS)
+        if fps <= 0:
+            cap.release()
+            raise ValueError(f"Invalid FPS ({fps}) for video: {video_path}")
+
         frame_number = int(timestamp * fps)
 
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
         ret, frame = cap.read()
         cap.release()
 
-        if not ret:
+        if not ret or frame is None:
             raise ValueError(f"Could not read frame at timestamp {timestamp}")
 
         return frame
@@ -159,7 +181,14 @@ class VideoProcessor:
             Array of frames
         """
         cap = cv2.VideoCapture(str(video_path))
+
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video: {video_path}")
+
         fps = cap.get(cv2.CAP_PROP_FPS)
+        if fps <= 0:
+            cap.release()
+            raise ValueError(f"Invalid FPS ({fps}) for video: {video_path}")
 
         start_frame = int(start_time * fps)
         end_frame = int(end_time * fps)
@@ -189,6 +218,12 @@ class VideoProcessor:
         Returns:
             Array of energy values per segment
         """
+        # Validate inputs
+        if sr <= 0:
+            raise ValueError(f"Invalid sample rate: {sr}")
+        if segment_length <= 0:
+            raise ValueError(f"Invalid segment length: {segment_length}")
+
         # If stereo, mix to mono for analysis
         if len(audio.shape) == 2 and audio.shape[0] == 2:
             audio_mono = np.mean(audio, axis=0)
@@ -196,7 +231,13 @@ class VideoProcessor:
             audio_mono = audio.flatten()
 
         segment_samples = int(segment_length * sr)
+        if segment_samples <= 0:
+            segment_samples = 1
+
         num_segments = len(audio_mono) // segment_samples
+
+        if num_segments == 0:
+            return np.array([])
 
         energy = np.array([
             np.sqrt(np.mean(audio_mono[i * segment_samples:(i + 1) * segment_samples] ** 2))

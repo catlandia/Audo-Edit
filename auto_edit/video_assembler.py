@@ -3,9 +3,10 @@
 import ffmpeg
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from tqdm import tqdm
 import json
+import numpy as np
 
 from .clip_selector import Clip
 
@@ -27,7 +28,9 @@ class VideoAssembler:
         self.output_dir = config.get('paths.output_dir', Path('./output'))
 
     def assemble_video(self, input_video: str, clips: List[Clip],
-                      output_path: Optional[str] = None) -> str:
+                      output_path: Optional[str] = None,
+                      audio: Optional[np.ndarray] = None,
+                      sr: int = 22050) -> Tuple[str, Optional[List], Optional[List]]:
         """
         Assemble clips into final highlight video.
 
@@ -35,9 +38,11 @@ class VideoAssembler:
             input_video: Path to source video
             clips: List of selected clips
             output_path: Optional output path
+            audio: Optional audio data for sound extraction
+            sr: Sample rate for audio
 
         Returns:
-            Path to output video
+            Tuple of (output_path, thumbnails, sound_clips)
         """
         if not clips:
             raise ValueError("No clips provided for assembly")
@@ -58,13 +63,91 @@ class VideoAssembler:
             # Create metadata file
             self._create_metadata_file(clips, output_path)
 
+            # Extract thumbnails if enabled
+            thumbnails = None
+            if self.config.get('output.extract_thumbnails', True):
+                thumbnails = self._extract_thumbnails_auto(input_video, clips)
+
+            # Extract sound clips if enabled
+            sound_clips = None
+            if self.config.get('output.extract_sounds', True):
+                sound_clips = self._extract_sounds_auto(input_video, clips, audio, sr)
+
             logger.info("Video assembly complete")
-            return str(output_path)
+            return str(output_path), thumbnails, sound_clips
 
         finally:
             # Cleanup temp files
             if concat_file.exists():
                 concat_file.unlink()
+
+    def _extract_thumbnails_auto(self, video_path: str, clips: List[Clip]) -> Optional[List]:
+        """
+        Automatically extract thumbnails from clips.
+
+        Args:
+            video_path: Path to video
+            clips: List of clips
+
+        Returns:
+            List of thumbnails or None
+        """
+        try:
+            from .thumbnail_extractor import ThumbnailExtractor
+
+            logger.info("Extracting thumbnails...")
+            extractor = ThumbnailExtractor(self.config)
+            thumbnails = extractor.extract_thumbnails(video_path, clips)
+
+            # Export thumbnail list
+            extractor.export_thumbnail_list(thumbnails)
+
+            # Create grid if we have thumbnails
+            if len(thumbnails) >= 4:
+                try:
+                    extractor.create_thumbnail_grid(thumbnails)
+                except Exception as e:
+                    logger.warning(f"Could not create thumbnail grid: {e}")
+
+            logger.info(f"✓ Extracted {len(thumbnails)} thumbnails")
+            return thumbnails
+
+        except Exception as e:
+            logger.error(f"Error extracting thumbnails: {e}")
+            return None
+
+    def _extract_sounds_auto(self, video_path: str, clips: List[Clip],
+                            audio: Optional[np.ndarray], sr: int) -> Optional[List]:
+        """
+        Automatically extract sound clips.
+
+        Args:
+            video_path: Path to video
+            clips: List of clips
+            audio: Audio data (optional)
+            sr: Sample rate
+
+        Returns:
+            List of sound clips or None
+        """
+        try:
+            from .sound_extractor import SoundExtractor
+
+            logger.info("Extracting sound clips...")
+            extractor = SoundExtractor(self.config)
+
+            max_clips = self.config.get('output.max_sound_clips', 10)
+            sound_clips = extractor.extract_sound_clips(video_path, clips, max_clips)
+
+            # Export sound list
+            extractor.export_sound_list(sound_clips)
+
+            logger.info(f"✓ Extracted {len(sound_clips)} sound clips")
+            return sound_clips
+
+        except Exception as e:
+            logger.error(f"Error extracting sounds: {e}")
+            return None
 
     def _create_concat_file(self, input_video: str, clips: List[Clip]) -> Path:
         """

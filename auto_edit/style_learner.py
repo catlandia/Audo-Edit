@@ -262,6 +262,8 @@ class StyleLearner:
 
         # Adjust based on clip duration preference
         preferred_length = preferences.get('avg_clip_length', 15.0)
+        if preferred_length <= 0:
+            preferred_length = 15.0  # Default fallback
         length_diff = abs(clip.duration - preferred_length)
         length_score = max(0, 1.0 - length_diff / preferred_length)
         score += 0.3 * (length_score - 0.5)

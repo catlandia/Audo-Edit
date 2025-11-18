@@ -4,7 +4,7 @@ An intelligent application that automatically edits long-form stream VODs into e
 
 ## Features
 
-### Phase 1: Foundation (Current)
+### Phase 1 & 2: Foundation + Media Extraction (Current - v0.2.0)
 - **Multi-Signal Detection**
   - Audio analysis (voice reactions, peaks, silence-to-chaos patterns)
   - Visual activity detection (motion, scene changes)
@@ -26,8 +26,21 @@ An intelligent application that automatically edits long-form stream VODs into e
   - Metadata export
   - Clip list generation
 
+- **NEW: Automatic Thumbnail Extraction** 🎨
+  - Extracts thumbnails from all selected clips
+  - Best frame detection (visual quality scoring)
+  - Automatic thumbnail grid creation
+  - Configurable resolution and quality
+  - Thumbnail list export
+
+- **NEW: Sound Clip Extraction** 🔊
+  - Extracts audio from best moments
+  - Type-specific sound extraction (laughter, peaks, etc.)
+  - Peak audio moment detection
+  - Soundboard creation
+  - Sound clip list with metadata
+
 ### Future Phases
-- **Phase 2**: Enhanced signal system and UI
 - **Phase 3**: Style learning from paired examples
 - **Phase 4**: Advanced mode system with weighting
 - **Phase 5**: Performance optimization and advanced features
@@ -82,10 +95,16 @@ cp .env.example .env
 
 ### Basic Usage
 
-Edit a stream VOD with default settings:
+Edit a stream VOD with default settings (auto-extracts thumbnails & sounds):
 ```bash
 python auto_edit.py edit input_stream.mp4
 ```
+
+Output:
+- `output/my_stream_highlights.mp4` - Your highlight video
+- `output/clip_list.txt` - List of selected clips
+- `output/thumbnails/` - Thumbnail images from key moments
+- `output/sounds/` - Audio clips from best moments
 
 Specify output path and target duration:
 ```bash

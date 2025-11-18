@@ -99,14 +99,23 @@ class SignalDetector:
         else:
             audio_mono = audio.flatten()
 
+        if len(audio_mono) == 0:
+            return []
+
         # Calculate RMS energy in windows
         window_length = int(0.5 * sr)  # 0.5 second windows
         hop_length = int(0.1 * sr)  # 0.1 second hop
 
         rms = librosa.feature.rms(y=audio_mono, frame_length=window_length, hop_length=hop_length)[0]
 
-        # Convert to dB
-        rms_db = librosa.amplitude_to_db(rms, ref=np.max)
+        if len(rms) == 0:
+            return []
+
+        # Convert to dB (handle zero RMS)
+        max_rms = np.max(rms)
+        if max_rms == 0:
+            max_rms = 1e-10
+        rms_db = librosa.amplitude_to_db(rms, ref=max_rms)
 
         # Get threshold from config
         threshold = self.config.get('signals.audio_game_peaks.peak_threshold', -20)
@@ -131,10 +140,18 @@ class SignalDetector:
                 # Calculate intensity (0-1)
                 intensity = min(1.0, (peak_value - threshold) / 20.0)
 
+                # Safely get timestamps
+                if end_idx < len(times):
+                    duration = float(times[end_idx] - times[start_idx])
+                elif start_idx < len(times):
+                    duration = float(times[-1] - times[start_idx])
+                else:
+                    duration = 0.0
+
                 events.append(SignalEvent(
                     signal_type='audio_peak',
-                    timestamp=float(times[start_idx]),
-                    duration=float(times[end_idx] - times[start_idx]),
+                    timestamp=float(times[start_idx]) if start_idx < len(times) else 0.0,
+                    duration=duration,
                     intensity=float(intensity),
                     metadata={'peak_db': float(peak_value)}
                 ))
@@ -203,10 +220,15 @@ class SignalDetector:
 
                 end_idx = i
 
-                # Classify type based on features
-                segment_zcr = np.mean(zcr_norm[start_idx:end_idx])
-                segment_energy = np.mean(rms_norm[start_idx:end_idx])
-                segment_centroid = np.mean(centroid_norm[start_idx:end_idx])
+                # Classify type based on features (handle empty segments)
+                if end_idx > start_idx:
+                    segment_zcr = np.mean(zcr_norm[start_idx:end_idx])
+                    segment_energy = np.mean(rms_norm[start_idx:end_idx])
+                    segment_centroid = np.mean(centroid_norm[start_idx:end_idx])
+                else:
+                    segment_zcr = zcr_norm[start_idx] if start_idx < len(zcr_norm) else 0
+                    segment_energy = rms_norm[start_idx] if start_idx < len(rms_norm) else 0
+                    segment_centroid = centroid_norm[start_idx] if start_idx < len(centroid_norm) else 0
 
                 event_type = 'voice_activity'
                 if segment_zcr > 1.5 and segment_energy > 1.0:
@@ -218,10 +240,18 @@ class SignalDetector:
 
                 intensity = min(1.0, peak_score / 3.0)
 
+                # Safely calculate duration
+                if end_idx < len(times):
+                    duration = float(times[end_idx] - times[start_idx])
+                elif start_idx < len(times):
+                    duration = float(times[-1] - times[start_idx])
+                else:
+                    duration = 0.0
+
                 events.append(SignalEvent(
                     signal_type=event_type,
-                    timestamp=float(times[start_idx]),
-                    duration=float(times[end_idx] - times[start_idx]),
+                    timestamp=float(times[start_idx]) if start_idx < len(times) else 0.0,
+                    duration=duration,
                     intensity=float(intensity),
                     metadata={
                         'zcr': float(segment_zcr),
@@ -256,7 +286,14 @@ class SignalDetector:
         # Calculate RMS in small windows
         hop_length = int(0.1 * sr)
         rms = librosa.feature.rms(y=audio_mono, frame_length=2048, hop_length=hop_length)[0]
-        rms_db = librosa.amplitude_to_db(rms, ref=np.max)
+
+        if len(rms) == 0:
+            return []
+
+        max_rms = np.max(rms)
+        if max_rms == 0:
+            max_rms = 1e-10
+        rms_db = librosa.amplitude_to_db(rms, ref=max_rms)
 
         times = librosa.frames_to_time(np.arange(len(rms_db)), sr=sr, hop_length=hop_length)
 
@@ -280,24 +317,28 @@ class SignalDetector:
                 if i < len(rms_db) - 10 and silence_duration >= 20:  # At least 2 seconds
                     # Look ahead for chaos within next 3 seconds
                     lookahead = min(30, len(rms_db) - i)
-                    max_next = np.max(rms_db[i:i + lookahead])
 
-                    if max_next > chaos_threshold:
-                        # Found silence-to-chaos transition
-                        chaos_idx = i + np.argmax(rms_db[i:i + lookahead])
-                        intensity = min(1.0, (max_next - chaos_threshold) / 20.0)
+                    if lookahead > 0:
+                        max_next = np.max(rms_db[i:i + lookahead])
 
-                        events.append(SignalEvent(
-                            signal_type='silence_to_chaos',
-                            timestamp=float(times[silence_start]),
-                            duration=float(times[chaos_idx] - times[silence_start]),
-                            intensity=float(intensity),
-                            metadata={
-                                'silence_db': float(rms_db[silence_start]),
-                                'chaos_db': float(max_next),
-                                'silence_duration': float(silence_duration * 0.1)
-                            }
-                        ))
+                        if max_next > chaos_threshold:
+                            # Found silence-to-chaos transition
+                            chaos_idx = i + np.argmax(rms_db[i:i + lookahead])
+                            intensity = min(1.0, (max_next - chaos_threshold) / 20.0)
+
+                            # Safely get timestamps
+                            if chaos_idx < len(times) and silence_start < len(times):
+                                events.append(SignalEvent(
+                                    signal_type='silence_to_chaos',
+                                    timestamp=float(times[silence_start]),
+                                    duration=float(times[chaos_idx] - times[silence_start]),
+                                    intensity=float(intensity),
+                                    metadata={
+                                        'silence_db': float(rms_db[silence_start]),
+                                        'chaos_db': float(max_next),
+                                        'silence_duration': float(silence_duration * 0.1)
+                                    }
+                                ))
             i += 1
 
         logger.info(f"Found {len(events)} silence-to-chaos events")
@@ -392,13 +433,16 @@ class SignalDetector:
                     end_idx = i
 
                     if end_idx - start_idx >= 2:  # At least 0.4 seconds
-                        events.append(SignalEvent(
-                            signal_type='high_motion',
-                            timestamp=float(times[start_idx]),
-                            duration=float(times[end_idx - 1] - times[start_idx]),
-                            intensity=float(min(1.0, peak_score / motion_threshold)),
-                            metadata={'peak_motion': float(peak_score)}
-                        ))
+                        # Safely access times array
+                        end_time_idx = min(end_idx - 1, len(times) - 1)
+                        if start_idx < len(times) and end_time_idx >= start_idx:
+                            events.append(SignalEvent(
+                                signal_type='high_motion',
+                                timestamp=float(times[start_idx]),
+                                duration=float(times[end_time_idx] - times[start_idx]),
+                                intensity=float(min(1.0, peak_score / motion_threshold)),
+                                metadata={'peak_motion': float(peak_score)}
+                            ))
                 else:
                     i += 1
 
@@ -474,9 +518,13 @@ class SignalDetector:
         cap.release()
 
         # Analyze activity scores to find chat bursts
-        if activity_scores:
+        if activity_scores and len(activity_scores) > 0:
             times, scores = zip(*activity_scores)
             scores = np.array(scores)
+
+            if len(scores) == 0:
+                logger.info(f"Found {len(events)} chat activity events")
+                return events
 
             # Smooth scores
             window = 5
@@ -498,13 +546,16 @@ class SignalDetector:
                     end_idx = i
 
                     if end_idx - start_idx >= 3:  # At least 3 seconds
-                        events.append(SignalEvent(
-                            signal_type='chat_activity',
-                            timestamp=float(times[start_idx]),
-                            duration=float(times[end_idx - 1] - times[start_idx]),
-                            intensity=float(min(1.0, peak_score * 10)),
-                            metadata={'peak_activity': float(peak_score)}
-                        ))
+                        # Safely access times array
+                        end_time_idx = min(end_idx - 1, len(times) - 1)
+                        if start_idx < len(times) and end_time_idx >= start_idx:
+                            events.append(SignalEvent(
+                                signal_type='chat_activity',
+                                timestamp=float(times[start_idx]),
+                                duration=float(times[end_time_idx] - times[start_idx]),
+                                intensity=float(min(1.0, peak_score * 10)),
+                                metadata={'peak_activity': float(peak_score)}
+                            ))
                 else:
                     i += 1
 
@@ -570,9 +621,13 @@ class SignalDetector:
         cap.release()
 
         # Process activity scores
-        if activity_scores:
+        if activity_scores and len(activity_scores) > 0:
             times, scores = zip(*activity_scores)
             scores = np.array(scores)
+
+            if len(scores) == 0:
+                logger.info(f"Found {len(events)} facecam activity events")
+                return events
 
             # Find sudden changes (reactions)
             threshold = np.percentile(scores, 80)
@@ -589,13 +644,20 @@ class SignalDetector:
 
                     end_idx = i
 
-                    events.append(SignalEvent(
-                        signal_type='facecam_reaction',
-                        timestamp=float(times[start_idx]),
-                        duration=float(times[end_idx - 1] - times[start_idx]) if end_idx > start_idx else 0.2,
-                        intensity=float(min(1.0, peak_score * 5)),
-                        metadata={'peak_activity': float(peak_score)}
-                    ))
+                    # Safely calculate duration
+                    if end_idx > start_idx and end_idx - 1 < len(times) and start_idx < len(times):
+                        duration = float(times[end_idx - 1] - times[start_idx])
+                    else:
+                        duration = 0.2
+
+                    if start_idx < len(times):
+                        events.append(SignalEvent(
+                            signal_type='facecam_reaction',
+                            timestamp=float(times[start_idx]),
+                            duration=duration,
+                            intensity=float(min(1.0, peak_score * 5)),
+                            metadata={'peak_activity': float(peak_score)}
+                        ))
                 else:
                     i += 1
 
