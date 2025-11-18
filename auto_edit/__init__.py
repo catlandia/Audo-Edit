@@ -3,7 +3,7 @@ Auto Edit - Automated Stream VOD Highlight Editor
 Converts long-form stream VODs into engaging highlight videos.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "Auto Edit Team"
 
 from .config import Config
@@ -15,6 +15,7 @@ from .thumbnail_extractor import ThumbnailExtractor
 from .sound_extractor import SoundExtractor
 from .meme_generator import MemeGenerator
 from .video_effects import VideoEffects
+from .asset_manager import AssetManager
 
 __all__ = [
     "Config",
@@ -26,4 +27,5 @@ __all__ = [
     "SoundExtractor",
     "MemeGenerator",
     "VideoEffects",
+    "AssetManager",
 ]

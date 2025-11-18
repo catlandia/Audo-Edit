@@ -30,7 +30,8 @@ class VideoAssembler:
     def assemble_video(self, input_video: str, clips: List[Clip],
                       output_path: Optional[str] = None,
                       audio: Optional[np.ndarray] = None,
-                      sr: int = 22050) -> Tuple[str, Optional[List], Optional[List]]:
+                      sr: int = 22050,
+                      signals: Optional[List[Dict[str, Any]]] = None) -> Tuple[str, Optional[List], Optional[List]]:
         """
         Assemble clips into final highlight video.
 
@@ -40,6 +41,7 @@ class VideoAssembler:
             output_path: Optional output path
             audio: Optional audio data for sound extraction
             sr: Sample rate for audio
+            signals: Optional list of detected signals for asset placement
 
         Returns:
             Tuple of (output_path, thumbnails, sound_clips)
@@ -59,6 +61,11 @@ class VideoAssembler:
         try:
             # Assemble video using ffmpeg
             self._run_ffmpeg_concat(concat_file, output_path)
+
+            # Apply user assets if enabled (music, sounds, images)
+            assets_enabled = self.config.get('assets.enabled', False)
+            if assets_enabled:
+                output_path = self._apply_user_assets(output_path, clips, signals or [])
 
             # Create metadata file
             self._create_metadata_file(clips, output_path)
@@ -389,6 +396,326 @@ class VideoAssembler:
         except ffmpeg.Error as e:
             logger.error(f"FFmpeg crossfade error: {e.stderr.decode()}")
             raise
+
+    def _apply_user_assets(self, video_path: Path, clips: List[Clip],
+                          signals: List[Dict[str, Any]]) -> Path:
+        """
+        Apply user-provided assets (music, sounds, images) to the video.
+
+        Args:
+            video_path: Path to the assembled video
+            clips: List of clips in the video
+            signals: List of detected signals
+
+        Returns:
+            Path to the enhanced video
+        """
+        from .asset_manager import AssetManager
+        import cv2
+
+        logger.info("Applying user assets...")
+
+        # Initialize asset manager
+        asset_mgr = AssetManager(self.config)
+        asset_mgr.load_assets()
+
+        # Calculate video statistics
+        total_duration = sum(c.duration for c in clips)
+        avg_intensity = sum(c.score for c in clips) / len(clips) if clips else 0
+
+        # Plan all asset placements
+        all_placements = []
+
+        # Music overlay
+        if asset_mgr.music_pool or asset_mgr.music_required:
+            music_placements = asset_mgr.plan_music_overlay(total_duration, len(clips), avg_intensity)
+            all_placements.extend(music_placements)
+            asset_mgr.placements.extend(music_placements)
+
+        # Sound effects
+        if asset_mgr.sounds_pool or asset_mgr.sounds_required:
+            sound_placements = asset_mgr.plan_sound_effects(signals, total_duration)
+            all_placements.extend(sound_placements)
+            asset_mgr.placements.extend(sound_placements)
+
+        # Image overlays
+        if asset_mgr.images_pool or asset_mgr.images_required:
+            image_placements = asset_mgr.plan_image_overlays(signals, total_duration)
+            all_placements.extend(image_placements)
+            asset_mgr.placements.extend(image_placements)
+
+        if not all_placements:
+            logger.info("No assets to apply")
+            return video_path
+
+        # Save asset report
+        asset_mgr.save_placement_report(self.output_dir / "asset_placements.txt")
+
+        # Apply assets to video
+        enhanced_path = video_path.parent / f"{video_path.stem}_with_assets{video_path.suffix}"
+
+        # Separate placements by type
+        music_placements = [p for p in all_placements if p.asset_type == 'music']
+        sound_placements = [p for p in all_placements if p.asset_type == 'sound']
+        image_placements = [p for p in all_placements if p.asset_type == 'image']
+
+        # Apply in stages
+        current_video = video_path
+
+        # Stage 1: Apply music overlay
+        if music_placements:
+            current_video = self._apply_music_overlay(current_video, music_placements, total_duration)
+
+        # Stage 2: Apply sound effects
+        if sound_placements:
+            current_video = self._apply_sound_effects(current_video, sound_placements)
+
+        # Stage 3: Apply image overlays
+        if image_placements:
+            current_video = self._apply_image_overlays(current_video, image_placements)
+
+        # Rename to final output
+        if current_video != enhanced_path:
+            import shutil
+            shutil.move(str(current_video), str(enhanced_path))
+
+        logger.info(f"✓ Assets applied successfully: {enhanced_path.name}")
+        return enhanced_path
+
+    def _apply_music_overlay(self, video_path: Path, music_placements: List,
+                            total_duration: float) -> Path:
+        """Apply background music overlay to video."""
+        logger.info(f"Applying {len(music_placements)} music track(s)...")
+
+        output_path = video_path.parent / f"{video_path.stem}_music{video_path.suffix}"
+
+        # Get music volume from config
+        music_volume = self.config.get('assets.music.volume', 0.3)
+
+        try:
+            # Build ffmpeg filter for music overlay
+            # Start with video
+            video_input = ffmpeg.input(str(video_path))
+
+            # For simplicity, use the first music track (can be extended for multiple)
+            music = music_placements[0]
+            music_input = ffmpeg.input(str(music.asset_path), ss=0, t=music.duration)
+
+            # Mix audio: lower music volume, keep original audio
+            mixed_audio = ffmpeg.filter([video_input.audio, music_input], 'amix',
+                                       inputs=2, duration='first',
+                                       weights=f'1.0 {music_volume}')
+
+            # Output with mixed audio
+            output = ffmpeg.output(video_input.video, mixed_audio, str(output_path),
+                                  vcodec='copy', acodec='aac', audio_bitrate='192k')
+
+            output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
+
+            logger.info(f"✓ Music overlay applied")
+            return output_path
+
+        except Exception as e:
+            logger.error(f"Error applying music overlay: {e}")
+            return video_path
+
+    def _apply_sound_effects(self, video_path: Path, sound_placements: List) -> Path:
+        """Apply sound effects at specific timestamps."""
+        logger.info(f"Applying {len(sound_placements)} sound effect(s)...")
+
+        output_path = video_path.parent / f"{video_path.stem}_sounds{video_path.suffix}"
+
+        # Get sound volume from config
+        sound_volume = self.config.get('assets.sounds.volume', 0.7)
+
+        try:
+            # This is complex for multiple sounds at different timestamps
+            # For now, we'll use a simpler approach with adelay filter
+
+            video_input = ffmpeg.input(str(video_path))
+            audio_streams = [video_input.audio]
+
+            # Add each sound effect with delay
+            for sound in sound_placements:
+                delay_ms = int(sound.timestamp * 1000)
+                sound_input = ffmpeg.input(str(sound.asset_path))
+
+                # Delay the sound to the correct timestamp
+                delayed = sound_input.filter('adelay', f'{delay_ms}|{delay_ms}')
+                delayed = delayed.filter('volume', sound_volume)
+
+                audio_streams.append(delayed)
+
+            # Mix all audio streams
+            if len(audio_streams) > 1:
+                mixed = ffmpeg.filter(audio_streams, 'amix',
+                                    inputs=len(audio_streams),
+                                    duration='first')
+            else:
+                mixed = audio_streams[0]
+
+            # Output
+            output = ffmpeg.output(video_input.video, mixed, str(output_path),
+                                  vcodec='copy', acodec='aac', audio_bitrate='192k')
+
+            output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
+
+            logger.info(f"✓ Sound effects applied")
+            return output_path
+
+        except Exception as e:
+            logger.error(f"Error applying sound effects: {e}")
+            return video_path
+
+    def _apply_image_overlays(self, video_path: Path, image_placements: List) -> Path:
+        """Apply image overlays at specific timestamps."""
+        logger.info(f"Applying {len(image_placements)} image overlay(s)...")
+
+        output_path = video_path.parent / f"{video_path.stem}_images{video_path.suffix}"
+
+        try:
+            import cv2
+            from PIL import Image
+            import numpy as np
+
+            # Open video
+            cap = cv2.VideoCapture(str(video_path))
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video: {video_path}")
+
+            # Get video properties
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+            # Create video writer
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            temp_video = video_path.parent / f"{video_path.stem}_temp_images.mp4"
+            out = cv2.VideoWriter(str(temp_video), fourcc, fps, (width, height))
+
+            # Process frames
+            frame_idx = 0
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                current_time = frame_idx / fps
+
+                # Apply image overlays for this timestamp
+                for img_placement in image_placements:
+                    start_time = img_placement.timestamp
+                    end_time = start_time + img_placement.duration
+
+                    if start_time <= current_time < end_time:
+                        frame = self._overlay_image(frame, img_placement, width, height)
+
+                out.write(frame)
+                frame_idx += 1
+
+            cap.release()
+            out.release()
+
+            # Copy audio from original
+            video_only = ffmpeg.input(str(temp_video))
+            audio_only = ffmpeg.input(str(video_path)).audio
+
+            output = ffmpeg.output(video_only, audio_only, str(output_path),
+                                  vcodec='libx264', acodec='copy')
+            output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
+
+            # Cleanup temp
+            temp_video.unlink()
+
+            logger.info(f"✓ Image overlays applied")
+            return output_path
+
+        except Exception as e:
+            logger.error(f"Error applying image overlays: {e}")
+            return video_path
+
+    def _overlay_image(self, frame: np.ndarray, img_placement, frame_width: int,
+                      frame_height: int) -> np.ndarray:
+        """Overlay a single image on a frame."""
+        try:
+            from PIL import Image
+
+            # Load overlay image
+            overlay = Image.open(img_placement.asset_path)
+
+            # Calculate overlay size
+            size_fraction = img_placement.properties.get('size', 0.2)
+            overlay_width = int(frame_width * size_fraction)
+            aspect_ratio = overlay.size[1] / overlay.size[0]
+            overlay_height = int(overlay_width * aspect_ratio)
+
+            # Resize overlay
+            overlay = overlay.resize((overlay_width, overlay_height), Image.Resampling.LANCZOS)
+
+            # Convert to RGBA if needed
+            if overlay.mode != 'RGBA':
+                overlay = overlay.convert('RGBA')
+
+            # Calculate position
+            position = img_placement.properties.get('position', 'auto')
+            padding = 20
+
+            if position == 'top-left':
+                x, y = padding, padding
+            elif position == 'top-right':
+                x, y = frame_width - overlay_width - padding, padding
+            elif position == 'bottom-left':
+                x, y = padding, frame_height - overlay_height - padding
+            elif position == 'bottom-right':
+                x, y = frame_width - overlay_width - padding, frame_height - overlay_height - padding
+            elif position == 'center':
+                x = (frame_width - overlay_width) // 2
+                y = (frame_height - overlay_height) // 2
+            else:  # auto - random corner
+                import random
+                positions = [
+                    (padding, padding),
+                    (frame_width - overlay_width - padding, padding),
+                    (padding, frame_height - overlay_height - padding),
+                    (frame_width - overlay_width - padding, frame_height - overlay_height - padding)
+                ]
+                x, y = random.choice(positions)
+
+            # Convert overlay to numpy array
+            overlay_array = np.array(overlay)
+
+            # Extract alpha channel
+            if overlay_array.shape[2] == 4:
+                alpha = overlay_array[:, :, 3] / 255.0
+                overlay_rgb = overlay_array[:, :, :3]
+            else:
+                alpha = np.ones((overlay_height, overlay_width))
+                overlay_rgb = overlay_array
+
+            # Extract region of interest from frame
+            y1, y2 = y, y + overlay_height
+            x1, x2 = x, x + overlay_width
+
+            # Bounds checking
+            if y1 < 0 or y2 > frame_height or x1 < 0 or x2 > frame_width:
+                return frame
+
+            roi = frame[y1:y2, x1:x2]
+
+            # Alpha blending
+            for c in range(3):
+                roi[:, :, c] = (alpha * overlay_rgb[:, :, c] +
+                               (1 - alpha) * roi[:, :, c])
+
+            # Put blended region back
+            frame[y1:y2, x1:x2] = roi
+
+            return frame
+
+        except Exception as e:
+            logger.warning(f"Could not overlay image: {e}")
+            return frame
 
     def _create_metadata_file(self, clips: List[Clip], output_path: Path) -> None:
         """

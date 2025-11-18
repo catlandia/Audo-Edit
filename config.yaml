@@ -107,6 +107,30 @@ memes:
   default_size: 0.25  # Default size relative to screen (0-1)
   default_opacity: 0.9  # Default opacity (0-1)
 
+# User Asset Integration (Music, Sounds, Images)
+assets:
+  enabled: false  # Enable user asset integration (music, sounds, images)
+
+  # Music Settings
+  music:
+    volume: 0.3  # Background music volume (0-1, relative to video audio)
+    default_duration: 30.0  # Default music duration if not specified
+    fade_in: true  # Fade in music at start
+    fade_out: true  # Fade out music at end
+    fade_duration: 2.0  # Fade duration in seconds
+
+  # Sound Effects Settings
+  sounds:
+    volume: 0.7  # Sound effect volume (0-1, relative to video audio)
+    placement_chance: 0.3  # Probability of placing pool sounds at suitable moments (0-1)
+    min_interval: 5.0  # Minimum seconds between sound effects
+
+  # Image Overlay Settings
+  images:
+    max_pool_per_video: 3  # Maximum number of pool images to use per video
+    placement_chance: 0.2  # Probability of placing pool images at moments (0-1)
+    default_opacity: 0.9  # Default image opacity (0-1)
+
 # Processing Settings
 processing:
   chunk_size_seconds: 30  # Analyze in chunks

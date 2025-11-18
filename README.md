@@ -4,7 +4,7 @@ An intelligent application that automatically edits long-form stream VODs into e
 
 ## Features
 
-### Current Release - v0.3.0
+### Current Release - v0.4.0
 - **Multi-Signal Detection**
   - Audio analysis (voice reactions, peaks, silence-to-chaos patterns)
   - Visual activity detection (motion, scene changes)
@@ -40,7 +40,7 @@ An intelligent application that automatically edits long-form stream VODs into e
   - Soundboard creation
   - Sound clip list with metadata
 
-- **NEW: Meme & Image Insertion** 🎭🔥
+- **Meme & Image Insertion** 🎭🔥
   - Automatic meme insertion at funny/exciting moments
   - Text overlay generation (context-aware)
   - Custom image overlay support
@@ -49,6 +49,16 @@ An intelligent application that automatically edits long-form stream VODs into e
   - Intensity-based sizing and opacity
   - Multiple overlay styles (text, image, or both)
   - Classic meme template generator
+
+- **NEW: User Asset Integration** 🎵🔊🖼️
+  - **Background Music**: Add your own music tracks
+  - **Sound Effects**: Insert sound effects at perfect moments
+  - **Image Overlays**: Add logos, sponsors, branding, CTAs
+  - **Two Modes**: Pool (AI picks) vs Required (must include)
+  - **Smart Placement**: Energy-based music, trigger-based sounds
+  - **Timestamp Control**: Place images at exact times
+  - **Metadata Detection**: Smart filename parsing for placement
+  - See `ASSETS_GUIDE.md` for complete documentation
 
 ### Future Phases
 - **Phase 3**: Style learning from paired examples
@@ -116,7 +126,9 @@ Output:
 - `output/thumbnails/` - Thumbnail images from key moments
 - `output/sounds/` - Audio clips from best moments
 - `output/meme_inserts.txt` - List of inserted memes
+- `output/asset_placements.txt` - Asset integration report (if enabled)
 - `memes/` - Your meme library (add your own!)
+- `music/`, `sounds/`, `images/` - Your custom assets (see ASSETS_GUIDE.md)
 
 Specify output path and target duration:
 ```bash
@@ -220,6 +232,62 @@ output:
   codec: libx264
 ```
 
+### User Assets
+
+Add your own music, sound effects, and images to enhance videos!
+
+#### Quick Start
+
+1. **Enable assets** in `config.yaml`:
+```yaml
+assets:
+  enabled: true
+```
+
+2. **Add your files** to the appropriate directories:
+```
+music/pool/         # Background music (AI picks by energy)
+music/required/     # Music that MUST play
+
+sounds/pool/        # Sound effects (AI places at moments)
+sounds/required/    # SFX that MUST be included
+
+images/pool/        # Images (AI places at key moments)
+images/required/    # Images that MUST appear (logos, sponsors)
+```
+
+3. **Run Auto Edit** as normal - assets are automatically integrated!
+
+#### Pool vs Required
+
+- **Pool Mode** (`pool/` folder): AI intelligently selects and places assets
+  - Music matched to video energy (high/medium/low)
+  - Sounds placed at matching moments (laughter, excitement, etc.)
+  - Images shown at intense moments (limited per video)
+
+- **Required Mode** (`required/` folder): Assets MUST be included
+  - Perfect for branding, sponsors, intro music, signature sounds
+  - Guaranteed placement in every video
+
+#### Smart Filename Detection
+
+Control asset behavior with filename keywords:
+
+**Music Energy**:
+- `epic_high.mp3` → High energy videos
+- `chill_low.mp3` → Low energy videos
+
+**Sound Triggers**:
+- `airhorn_hype.mp3` → Plays during excitement
+- `laugh_lol.mp3` → Plays during laughter
+
+**Image Placement**:
+- `watermark_bottom-right_small.png` → Small watermark in corner
+- `sponsor_at60_10s.png` → Show at 1:00 for 10 seconds
+- `logo_center_large_5s.png` → Large centered logo for 5s
+
+See **`ASSETS_GUIDE.md`** for complete documentation, examples, and troubleshooting!
+
 ## Style Learning (Phase 3)
 
 ### Adding Training Examples
@@ -320,13 +388,32 @@ Audo-Edit/
 │   ├── signal_detector.py  # Signal detection
 │   ├── clip_selector.py    # Clip selection logic
 │   ├── video_assembler.py  # Video assembly
-│   ├── style_learner.py    # Style learning (Phase 3)
+│   ├── thumbnail_extractor.py  # Thumbnail extraction
+│   ├── sound_extractor.py     # Sound clip extraction
+│   ├── meme_generator.py      # Meme generation
+│   ├── video_effects.py       # Video effects & overlays
+│   ├── asset_manager.py       # Asset integration
+│   ├── style_learner.py       # Style learning (Phase 3)
 │   └── utils.py         # Utility functions
 ├── auto_edit.py         # Main CLI
 ├── config.yaml          # Configuration file
 ├── requirements.txt     # Python dependencies
+├── ASSETS_GUIDE.md     # Asset integration guide
+├── MEME_GUIDE.md       # Meme system guide
 ├── input/              # Input videos (default)
 ├── output/             # Output highlights
+├── memes/              # Meme library
+│   ├── pool/          # Optional memes (AI picks)
+│   └── required/      # Required memes (always shown)
+├── music/              # Background music assets
+│   ├── pool/          # Optional music (AI picks by energy)
+│   └── required/      # Required music (always played)
+├── sounds/             # Sound effect assets
+│   ├── pool/          # Optional SFX (AI places)
+│   └── required/      # Required SFX (always included)
+├── images/             # Image overlay assets
+│   ├── pool/          # Optional images (AI places)
+│   └── required/      # Required images (branding, sponsors)
 ├── models/             # Trained models
 └── training_data/      # Training examples
 ```
