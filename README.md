@@ -67,6 +67,33 @@ An intelligent application that automatically edits long-form stream VODs into e
 
 ## Installation
 
+**👉 New User? Start Here: [QUICK_START.md](QUICK_START.md) for the easiest installation!**
+
+### Super Easy Installation (Windows)
+
+**Recommended for beginners:**
+
+1. Make sure you have **Python 3.8+** installed ([Download here](https://www.python.org/downloads/))
+   - ⚠️ Check "Add Python to PATH" during installation!
+2. **Double-click `INSTALL.bat`**
+3. Wait 5-10 minutes
+4. Done! Run `run_gui.bat` to start!
+
+The installer automatically:
+- ✅ Checks Python installation
+- ✅ Downloads and installs FFmpeg
+- ✅ Creates virtual environment
+- ✅ Installs all dependencies
+
+See [QUICK_START.md](QUICK_START.md) for step-by-step guide with screenshots and troubleshooting!
+
+---
+
+### Manual Installation
+
+<details>
+<summary>Click to expand manual installation instructions</summary>
+
 ### Requirements
 - Python 3.8+
 - FFmpeg (must be installed separately)
@@ -74,17 +101,12 @@ An intelligent application that automatically edits long-form stream VODs into e
 ### Install FFmpeg
 
 **Windows:**
-1. Download FFmpeg from https://www.gyan.dev/ffmpeg/builds/ (get ffmpeg-release-essentials.zip)
-2. Extract to `C:\ffmpeg`
-3. Add `C:\ffmpeg\bin` to your System PATH:
-   - Press Win + X, select "System"
-   - Click "Advanced system settings"
-   - Click "Environment Variables"
-   - Under "System variables", find "Path", click "Edit"
-   - Click "New" and add `C:\ffmpeg\bin`
-   - Click OK on all windows
-4. Restart your terminal/PowerShell
-5. Verify: `ffmpeg -version`
+- **Easy**: Run `install_ffmpeg.bat` (downloads and installs automatically)
+- **Manual**:
+  1. Download FFmpeg from https://www.gyan.dev/ffmpeg/builds/ (get ffmpeg-release-essentials.zip)
+  2. Extract to `C:\ffmpeg`
+  3. Add `C:\ffmpeg\bin` to your System PATH
+  4. Restart terminal and verify: `ffmpeg -version`
 
 **macOS:**
 ```bash
@@ -156,6 +178,10 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 ```
+
+</details>
+
+---
 
 ## Quick Start
 
