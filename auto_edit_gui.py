@@ -509,27 +509,52 @@ Training Status:"""
         self.training_status_text.insert("1.0", "Loading training status...")
         self.training_status_text.config(state=tk.DISABLED)
 
-        # Buttons frame
+        # Buttons frame - LARGE and VISIBLE
         button_frame = ttk.Frame(parent)
-        button_frame.pack(fill=tk.X, pady=10)
+        button_frame.pack(fill=tk.X, padx=10, pady=20)
 
-        ttk.Button(
+        # Make buttons bigger and more prominent
+        refresh_btn = tk.Button(
             button_frame,
             text="🔄 Refresh Status",
-            command=self.refresh_training_status
-        ).pack(side=tk.LEFT, padx=5)
+            command=self.refresh_training_status,
+            font=("TkDefaultFont", 11, "bold"),
+            bg="#E0E0E0",
+            fg="black",
+            relief=tk.RAISED,
+            borderwidth=2,
+            padx=20,
+            pady=10
+        )
+        refresh_btn.pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(
+        train_btn = tk.Button(
             button_frame,
             text="🧠 Train AI",
-            command=self.train_ai
-        ).pack(side=tk.LEFT, padx=5)
+            command=self.train_ai,
+            font=("TkDefaultFont", 11, "bold"),
+            bg="#4CAF50",
+            fg="white",
+            relief=tk.RAISED,
+            borderwidth=2,
+            padx=20,
+            pady=10
+        )
+        train_btn.pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(
+        folder_btn = tk.Button(
             button_frame,
             text="📂 Open Learning Folder",
-            command=self.open_learning_folder
-        ).pack(side=tk.LEFT, padx=5)
+            command=self.open_learning_folder,
+            font=("TkDefaultFont", 11, "bold"),
+            bg="#2196F3",
+            fg="white",
+            relief=tk.RAISED,
+            borderwidth=2,
+            padx=20,
+            pady=10
+        )
+        folder_btn.pack(side=tk.LEFT, padx=5)
 
         # Instructions frame
         instructions_frame = ttk.LabelFrame(parent, text="Quick Guide", padding="10")
