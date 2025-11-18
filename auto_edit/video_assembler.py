@@ -762,7 +762,7 @@ class VideoAssembler:
         logger.info(f"Metadata saved to: {metadata_path}")
 
     def create_preview_video(self, input_video: str, clips: List[Clip],
-                           max_clips: int = 5) -> str:
+                           max_clips: int = 5, output_path: Optional[str] = None) -> str:
         """
         Create a quick preview with top clips.
 
@@ -770,6 +770,7 @@ class VideoAssembler:
             input_video: Source video path
             clips: All selected clips
             max_clips: Maximum clips for preview
+            output_path: Optional output path for preview video
 
         Returns:
             Path to preview video
@@ -778,10 +779,17 @@ class VideoAssembler:
         preview_clips = sorted(clips, key=lambda x: x.score, reverse=True)[:max_clips]
         preview_clips.sort(key=lambda x: x.start_time)  # Sort by time
 
-        video_name = Path(input_video).stem
-        output_path = self.output_dir / f"{video_name}_preview.mp4"
+        # Use custom output path if provided, otherwise use default
+        if output_path is None:
+            video_name = Path(input_video).stem
+            output_path = self.output_dir / f"{video_name}_preview.mp4"
+        else:
+            # If custom path provided, ensure it has _preview suffix
+            output_path = Path(output_path)
+            if not output_path.stem.endswith('_preview'):
+                output_path = output_path.parent / f"{output_path.stem}_preview{output_path.suffix}"
 
-        return self.assemble_video(input_video, preview_clips, output_path)
+        return self.assemble_video(input_video, preview_clips, str(output_path))
 
     def export_clip_list(self, clips: List[Clip], output_path: Optional[str] = None) -> str:
         """

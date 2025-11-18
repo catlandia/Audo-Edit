@@ -114,7 +114,8 @@ def edit(input_video: str, output: Optional[str], duration: int, mode: str,
             output_path = video_assembler.create_preview_video(
                 str(video_path),
                 clips,
-                max_clips=5
+                max_clips=5,
+                output_path=output
             )
         else:
             print_info(f"Assembling {len(clips)} clips...")
@@ -128,9 +129,9 @@ def edit(input_video: str, output: Optional[str], duration: int, mode: str,
 
             # Report on extracted thumbnails and sounds
             if thumbnails:
-                print_success(f"✓ {len(thumbnails)} thumbnails extracted → output/thumbnails/")
+                print_success(f"{len(thumbnails)} thumbnails extracted -> output/thumbnails/")
             if sound_clips:
-                print_success(f"✓ {len(sound_clips)} sound clips extracted → output/sounds/")
+                print_success(f"{len(sound_clips)} sound clips extracted -> output/sounds/")
 
         # Export clip list
         clip_list_path = video_assembler.export_clip_list(clips)
