@@ -187,8 +187,8 @@ class VideoAssembler:
 
                 self._extract_clip(input_video, clip.start_time, clip.end_time, temp_clip)
 
-                # Add to concat file
-                f.write(f"file '{temp_clip}'\n")
+                # Add to concat file (use absolute path to avoid path doubling)
+                f.write(f"file '{temp_clip.absolute()}'\n")
 
         return concat_file
 
@@ -244,7 +244,8 @@ class VideoAssembler:
                     # Standard extraction
                     self._extract_clip(input_video, clip.start_time, clip.end_time, temp_clip)
 
-                f.write(f"file '{temp_clip}'\n")
+                # Use absolute path to avoid path doubling issues
+                f.write(f"file '{temp_clip.absolute()}'\n")
 
         return concat_file
 
