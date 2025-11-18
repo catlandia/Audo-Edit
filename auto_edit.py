@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group()
-@click.version_option(version='0.2.0')
+@click.version_option(version='0.3.0')
 def cli():
     """Auto Edit - Automated Stream VOD Highlight Editor"""
     pass

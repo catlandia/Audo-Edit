@@ -94,6 +94,19 @@ thumbnails:
   height: 720
   quality: 90  # JPEG quality (0-100)
 
+# Meme & Image Insertion Settings
+memes:
+  enabled: true  # Enable automatic meme insertion
+  style: text  # 'text', 'image', 'both'
+  intensity_threshold: 0.5  # Minimum signal intensity for meme (0-1)
+  max_per_clip: 2  # Maximum memes per clip
+  meme_library: ./memes  # Path to your meme images
+
+  # Default settings
+  default_duration: 2.0  # Default meme display duration (seconds)
+  default_size: 0.25  # Default size relative to screen (0-1)
+  default_opacity: 0.9  # Default opacity (0-1)
+
 # Processing Settings
 processing:
   chunk_size_seconds: 30  # Analyze in chunks

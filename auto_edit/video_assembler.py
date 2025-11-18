@@ -162,6 +162,14 @@ class VideoAssembler:
         """
         concat_file = self.temp_dir / "concat_list.txt"
 
+        # Check if memes are enabled
+        memes_enabled = self.config.get('memes.enabled', False)
+
+        if memes_enabled:
+            # Use meme-enhanced clip extraction
+            return self._create_concat_file_with_memes(input_video, clips)
+
+        # Standard clip extraction
         with open(concat_file, 'w') as f:
             for i, clip in enumerate(clips):
                 # Extract clip to temp file
@@ -173,6 +181,62 @@ class VideoAssembler:
                 self._extract_clip(input_video, clip.start_time, clip.end_time, temp_clip)
 
                 # Add to concat file
+                f.write(f"file '{temp_clip}'\n")
+
+        return concat_file
+
+    def _create_concat_file_with_memes(self, input_video: str, clips: List[Clip]) -> Path:
+        """
+        Create concat file with meme-enhanced clips.
+
+        Args:
+            input_video: Source video path
+            clips: List of clips
+
+        Returns:
+            Path to concat file
+        """
+        from .meme_generator import MemeGenerator
+        from .video_effects import VideoEffects
+
+        concat_file = self.temp_dir / "concat_list.txt"
+
+        # Initialize meme generator
+        meme_gen = MemeGenerator(self.config)
+        video_fx = VideoEffects(self.config)
+
+        # Analyze clips for meme opportunities
+        logger.info("Analyzing clips for meme insertions...")
+        all_meme_inserts = meme_gen.analyze_meme_opportunities(clips)
+
+        # Group memes by clip
+        memes_by_clip = {}
+        for meme in all_meme_inserts:
+            memes_by_clip.setdefault(meme.clip_index, []).append(meme)
+
+        # Export meme list
+        if all_meme_inserts:
+            meme_gen.export_meme_list(all_meme_inserts)
+            logger.info(f"✓ {len(all_meme_inserts)} memes will be inserted")
+
+        # Extract clips with memes
+        with open(concat_file, 'w') as f:
+            for i, clip in enumerate(clips):
+                temp_clip = self.temp_dir / f"clip_meme_{i:04d}.mp4"
+
+                logger.info(f"Processing clip {i + 1}/{len(clips)}: "
+                           f"{clip.start_time:.1f}s - {clip.end_time:.1f}s")
+
+                # Get memes for this clip
+                clip_memes = memes_by_clip.get(i, [])
+
+                if clip_memes:
+                    # Apply memes to clip
+                    video_fx.apply_memes_to_clip(input_video, clip, clip_memes, str(temp_clip))
+                else:
+                    # Standard extraction
+                    self._extract_clip(input_video, clip.start_time, clip.end_time, temp_clip)
+
                 f.write(f"file '{temp_clip}'\n")
 
         return concat_file

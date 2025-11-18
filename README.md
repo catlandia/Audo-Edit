@@ -4,7 +4,7 @@ An intelligent application that automatically edits long-form stream VODs into e
 
 ## Features
 
-### Phase 1 & 2: Foundation + Media Extraction (Current - v0.2.0)
+### Current Release - v0.3.0
 - **Multi-Signal Detection**
   - Audio analysis (voice reactions, peaks, silence-to-chaos patterns)
   - Visual activity detection (motion, scene changes)
@@ -26,19 +26,29 @@ An intelligent application that automatically edits long-form stream VODs into e
   - Metadata export
   - Clip list generation
 
-- **NEW: Automatic Thumbnail Extraction** 🎨
+- **Automatic Thumbnail Extraction** 🎨
   - Extracts thumbnails from all selected clips
   - Best frame detection (visual quality scoring)
   - Automatic thumbnail grid creation
   - Configurable resolution and quality
   - Thumbnail list export
 
-- **NEW: Sound Clip Extraction** 🔊
+- **Sound Clip Extraction** 🔊
   - Extracts audio from best moments
   - Type-specific sound extraction (laughter, peaks, etc.)
   - Peak audio moment detection
   - Soundboard creation
   - Sound clip list with metadata
+
+- **NEW: Meme & Image Insertion** 🎭🔥
+  - Automatic meme insertion at funny/exciting moments
+  - Text overlay generation (context-aware)
+  - Custom image overlay support
+  - Smart positioning based on moment type
+  - User meme library support
+  - Intensity-based sizing and opacity
+  - Multiple overlay styles (text, image, or both)
+  - Classic meme template generator
 
 ### Future Phases
 - **Phase 3**: Style learning from paired examples
@@ -101,10 +111,12 @@ python auto_edit.py edit input_stream.mp4
 ```
 
 Output:
-- `output/my_stream_highlights.mp4` - Your highlight video
+- `output/my_stream_highlights.mp4` - Your highlight video (with memes!)
 - `output/clip_list.txt` - List of selected clips
 - `output/thumbnails/` - Thumbnail images from key moments
 - `output/sounds/` - Audio clips from best moments
+- `output/meme_inserts.txt` - List of inserted memes
+- `memes/` - Your meme library (add your own!)
 
 Specify output path and target duration:
 ```bash
