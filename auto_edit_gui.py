@@ -564,24 +564,28 @@ To edit advanced settings:
         current = self.preview_mode.get()
         self.preview_mode.set(not current)
         self.update_simple_toggle_button(self.preview_btn, self.preview_mode.get())
+        self.save_config()  # Auto-save on change
 
     def toggle_verbose_mode(self):
         """Toggle verbose mode"""
         current = self.verbose_mode.get()
         self.verbose_mode.set(not current)
         self.update_simple_toggle_button(self.verbose_btn, self.verbose_mode.get())
+        self.save_config()  # Auto-save on change
 
     def toggle_memes(self):
         """Toggle memes feature"""
         current = self.memes_enabled.get()
         self.memes_enabled.set(not current)
         self.update_simple_toggle_button(self.memes_btn, self.memes_enabled.get())
+        self.save_config()  # Auto-save on change
 
     def toggle_assets(self):
         """Toggle custom assets feature"""
         current = self.assets_enabled.get()
         self.assets_enabled.set(not current)
         self.update_simple_toggle_button(self.assets_btn, self.assets_enabled.get())
+        self.save_config()  # Auto-save on change
 
     def toggle_force_sounds(self):
         """Toggle force all sounds setting"""
@@ -590,6 +594,7 @@ To edit advanced settings:
             self.force_all_sounds.set(not current)
             self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
             self.log(f"Force ALL Sounds: {'ON' if self.force_all_sounds.get() else 'OFF'}")
+            self.save_config()  # Auto-save on change
         except Exception as e:
             self.log(f"Error toggling force sounds: {e}")
 
@@ -600,6 +605,7 @@ To edit advanced settings:
             self.force_all_music.set(not current)
             self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
             self.log(f"Force ALL Music: {'ON' if self.force_all_music.get() else 'OFF'}")
+            self.save_config()  # Auto-save on change
         except Exception as e:
             self.log(f"Error toggling force music: {e}")
 
@@ -610,6 +616,7 @@ To edit advanced settings:
             self.force_all_images.set(not current)
             self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
             self.log(f"Force ALL Images: {'ON' if self.force_all_images.get() else 'OFF'}")
+            self.save_config()  # Auto-save on change
         except Exception as e:
             self.log(f"Error toggling force images: {e}")
 
