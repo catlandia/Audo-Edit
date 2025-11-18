@@ -646,7 +646,8 @@ class VideoAssembler:
             output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
 
             # Cleanup temp
-            temp_video.unlink()
+            if temp_video and temp_video.exists():
+                temp_video.unlink()
 
             logger.info(f"Image overlays applied")
             return output_path
