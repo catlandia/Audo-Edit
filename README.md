@@ -159,7 +159,17 @@ cp .env.example .env
 
 ## Quick Start
 
-### Basic Usage
+### Easy Mode: Graphical Interface (Windows)
+
+**Just want to click buttons? Use the GUI!**
+
+1. Double-click `run_gui.bat`
+2. Click "Browse" to select your video
+3. Adjust settings with sliders and checkboxes
+4. Click "Start Processing"
+5. Done! 🎉
+
+### Command Line Mode
 
 Edit a stream VOD with default settings (auto-extracts thumbnails & sounds):
 ```bash

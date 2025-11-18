@@ -111,14 +111,30 @@ cd Audo-Edit
 
 Now let's create your first highlight video!
 
-### 1. Prepare Your Video
+### Option 1: Easy Mode (Graphical Interface) - RECOMMENDED
 
-Place your stream VOD in an easy location, like:
-```
-C:\Users\YourName\Videos\my_stream.mp4
-```
+**No command line needed!**
 
-### 2. Run Auto Edit
+1. **Double-click `run_gui.bat`** in the Audo-Edit folder
+
+2. **The GUI will open** - it looks like a normal Windows application
+
+3. **Click "Browse"** to select your video file
+
+4. **Adjust settings:**
+   - Drag the slider for target duration (5-60 minutes)
+   - Check "Preview Mode" for a quick test
+   - Enable/disable Memes and Assets
+
+5. **Click "Start Processing"**
+
+6. **Wait for it to finish** - you'll see progress in the Output Log tab
+
+7. **Done!** Click "Open Output Folder" to see your highlight video
+
+### Option 2: Command Line Mode
+
+If you prefer typing commands:
 
 **Make sure your virtual environment is activated** (you should see `(venv)` in your prompt).
 

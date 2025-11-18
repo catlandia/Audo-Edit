@@ -87,11 +87,15 @@ echo.
 echo Auto Edit is ready to use!
 echo.
 echo Next steps:
-echo   1. Double-click 'run_auto_edit.bat' to process videos
+echo   1. EASY MODE: Double-click 'run_gui.bat' for graphical interface
 echo   OR
-echo   2. Open PowerShell and run:
+echo   2. SIMPLE MODE: Double-click 'run_auto_edit.bat' for quick processing
+echo   OR
+echo   3. ADVANCED: Open PowerShell and run:
 echo      venv\Scripts\activate
 echo      python auto_edit.py edit "C:\path\to\video.mp4"
+echo.
+echo RECOMMENDED: Start with run_gui.bat for the easiest experience!
 echo.
 echo See WINDOWS_SETUP.md for detailed usage instructions.
 echo.
