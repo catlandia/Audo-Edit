@@ -73,6 +73,19 @@ An intelligent application that automatically edits long-form stream VODs into e
 
 ### Install FFmpeg
 
+**Windows:**
+1. Download FFmpeg from https://www.gyan.dev/ffmpeg/builds/ (get ffmpeg-release-essentials.zip)
+2. Extract to `C:\ffmpeg`
+3. Add `C:\ffmpeg\bin` to your System PATH:
+   - Press Win + X, select "System"
+   - Click "Advanced system settings"
+   - Click "Environment Variables"
+   - Under "System variables", find "Path", click "Edit"
+   - Click "New" and add `C:\ffmpeg\bin`
+   - Click OK on all windows
+4. Restart your terminal/PowerShell
+5. Verify: `ffmpeg -version`
+
 **macOS:**
 ```bash
 brew install ffmpeg
@@ -84,10 +97,43 @@ sudo apt update
 sudo apt install ffmpeg
 ```
 
-**Windows:**
-Download from https://ffmpeg.org/download.html
-
 ### Install Auto Edit
+
+**Windows:**
+
+**Easy Setup (Recommended):**
+1. Download/extract the repository to your desired location
+2. Double-click `setup_windows.bat` - it will install everything automatically
+3. When done, double-click `run_auto_edit.bat` to process videos
+
+**Manual Setup:**
+1. Clone or download the repository to your desired location (e.g., `C:\Users\YourName\Audo-Edit`)
+
+2. Open PowerShell or Command Prompt in the Audo-Edit directory
+
+3. Create a virtual environment:
+```powershell
+python -m venv venv
+```
+
+4. Activate the virtual environment:
+```powershell
+venv\Scripts\activate
+```
+
+5. Install dependencies:
+```powershell
+pip install -r requirements.txt
+```
+
+6. Copy example configuration (if .env.example exists):
+```powershell
+copy .env.example .env
+```
+
+**See `WINDOWS_SETUP.md` for detailed Windows-specific instructions!**
+
+**macOS/Linux:**
 
 1. Clone the repository:
 ```bash
@@ -98,7 +144,7 @@ cd Audo-Edit
 2. Create a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 ```
 
 3. Install dependencies:
