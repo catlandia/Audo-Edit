@@ -374,44 +374,45 @@ class SignalDetector:
 
         pbar = tqdm(total=total_frames // sample_rate, desc="Analyzing video")
 
-        while True:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ret, frame = cap.read()
+        try:
+            while True:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = cap.read()
 
-            if not ret:
-                break
+                if not ret:
+                    break
 
-            timestamp = frame_idx / fps
+                timestamp = frame_idx / fps
 
-            # Convert to grayscale for analysis
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # Convert to grayscale for analysis
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            # Calculate histogram for scene change detection
-            hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-            hist = cv2.normalize(hist, hist).flatten()
+                # Calculate histogram for scene change detection
+                hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
+                hist = cv2.normalize(hist, hist).flatten()
 
-            if prev_frame is not None:
-                # Motion detection using frame difference
-                diff = cv2.absdiff(prev_frame, gray)
-                motion_score = np.mean(diff) / 255.0
+                if prev_frame is not None:
+                    # Motion detection using frame difference
+                    diff = cv2.absdiff(prev_frame, gray)
+                    motion_score = np.mean(diff) / 255.0
 
-                motion_scores.append((timestamp, motion_score))
+                    motion_scores.append((timestamp, motion_score))
 
-                # Scene change detection using histogram comparison
-                if prev_hist is not None:
-                    hist_diff = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_CHISQR)
-                    scene_threshold = self.config.get('signals.visual_activity.scene_change_threshold', 30)
+                    # Scene change detection using histogram comparison
+                    if prev_hist is not None:
+                        hist_diff = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_CHISQR)
+                        scene_threshold = self.config.get('signals.visual_activity.scene_change_threshold', 30)
 
-                    if hist_diff > scene_threshold:
-                        scene_changes.append((timestamp, hist_diff))
+                        if hist_diff > scene_threshold:
+                            scene_changes.append((timestamp, hist_diff))
 
-            prev_frame = gray.copy()
-            prev_hist = hist.copy()
-            frame_idx += sample_rate
-            pbar.update(1)
-
-        pbar.close()
-        cap.release()
+                prev_frame = gray.copy()
+                prev_hist = hist.copy()
+                frame_idx += sample_rate
+                pbar.update(1)
+        finally:
+            pbar.close()
+            cap.release()
 
         # Process motion scores to find high activity periods
         if motion_scores:
@@ -493,29 +494,30 @@ class SignalDetector:
         frame_idx = 0
         activity_scores = []
 
-        while True:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ret, frame = cap.read()
+        try:
+            while True:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = cap.read()
 
-            if not ret:
-                break
+                if not ret:
+                    break
 
-            timestamp = frame_idx / fps
+                timestamp = frame_idx / fps
 
-            # Extract chat region
-            roi = frame[y1:y2, x1:x2]
-            gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                # Extract chat region
+                roi = frame[y1:y2, x1:x2]
+                gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-            if prev_roi is not None:
-                # Detect motion/changes in chat area
-                diff = cv2.absdiff(prev_roi, gray_roi)
-                activity = np.mean(diff) / 255.0
-                activity_scores.append((timestamp, activity))
+                if prev_roi is not None:
+                    # Detect motion/changes in chat area
+                    diff = cv2.absdiff(prev_roi, gray_roi)
+                    activity = np.mean(diff) / 255.0
+                    activity_scores.append((timestamp, activity))
 
-            prev_roi = gray_roi.copy()
-            frame_idx += sample_rate
-
-        cap.release()
+                prev_roi = gray_roi.copy()
+                frame_idx += sample_rate
+        finally:
+            cap.release()
 
         # Analyze activity scores to find chat bursts
         if activity_scores and len(activity_scores) > 0:
@@ -598,27 +600,28 @@ class SignalDetector:
         frame_idx = 0
         activity_scores = []
 
-        while True:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ret, frame = cap.read()
+        try:
+            while True:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = cap.read()
 
-            if not ret:
-                break
+                if not ret:
+                    break
 
-            timestamp = frame_idx / fps
+                timestamp = frame_idx / fps
 
-            roi = frame[y1:y2, x1:x2]
-            gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                roi = frame[y1:y2, x1:x2]
+                gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-            if prev_roi is not None:
-                diff = cv2.absdiff(prev_roi, gray_roi)
-                activity = np.mean(diff) / 255.0
-                activity_scores.append((timestamp, activity))
+                if prev_roi is not None:
+                    diff = cv2.absdiff(prev_roi, gray_roi)
+                    activity = np.mean(diff) / 255.0
+                    activity_scores.append((timestamp, activity))
 
-            prev_roi = gray_roi.copy()
-            frame_idx += sample_rate
-
-        cap.release()
+                prev_roi = gray_roi.copy()
+                frame_idx += sample_rate
+        finally:
+            cap.release()
 
         # Process activity scores
         if activity_scores and len(activity_scores) > 0:

@@ -92,23 +92,24 @@ class ThumbnailExtractor:
         """
         cap = cv2.VideoCapture(str(video_path))
 
-        if not cap.isOpened():
-            logger.error(f"Could not open video: {video_path}")
-            return None
+        try:
+            if not cap.isOpened():
+                logger.error(f"Could not open video: {video_path}")
+                return None
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps <= 0:
+                return None
+
+            frame_number = int(timestamp * fps)
+
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+            ret, frame = cap.read()
+
+            if not ret or frame is None:
+                return None
+        finally:
             cap.release()
-            return None
-
-        frame_number = int(timestamp * fps)
-
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-        ret, frame = cap.read()
-        cap.release()
-
-        if not ret or frame is None:
-            return None
 
         # Save thumbnail
         filename = f"{output_prefix}_{clip_index:04d}_{timestamp:.2f}s.jpg"
@@ -147,40 +148,40 @@ class ThumbnailExtractor:
         """
         cap = cv2.VideoCapture(str(video_path))
 
-        if not cap.isOpened():
-            return None
+        try:
+            if not cap.isOpened():
+                return None
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps <= 0:
+                return None
+
+            start_frame = int(clip.start_time * fps)
+            end_frame = int(clip.end_time * fps)
+
+            # Sample frames throughout the clip
+            sample_rate = max(1, int(fps / 2))  # Sample 2 frames per second
+
+            best_frame = None
+            best_score = -1
+            best_timestamp = clip.start_time
+
+            for frame_idx in range(start_frame, end_frame, sample_rate):
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = cap.read()
+
+                if not ret:
+                    break
+
+                # Score frame based on visual interest
+                score = self._score_frame_quality(frame)
+
+                if score > best_score:
+                    best_score = score
+                    best_frame = frame.copy()
+                    best_timestamp = frame_idx / fps
+        finally:
             cap.release()
-            return None
-
-        start_frame = int(clip.start_time * fps)
-        end_frame = int(clip.end_time * fps)
-
-        # Sample frames throughout the clip
-        sample_rate = max(1, int(fps / 2))  # Sample 2 frames per second
-
-        best_frame = None
-        best_score = -1
-        best_timestamp = clip.start_time
-
-        for frame_idx in range(start_frame, end_frame, sample_rate):
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ret, frame = cap.read()
-
-            if not ret:
-                break
-
-            # Score frame based on visual interest
-            score = self._score_frame_quality(frame)
-
-            if score > best_score:
-                best_score = score
-                best_frame = frame.copy()
-                best_timestamp = frame_idx / fps
-
-        cap.release()
 
         if best_frame is None:
             return None

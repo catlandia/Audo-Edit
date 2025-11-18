@@ -47,27 +47,28 @@ class VideoProcessor:
         # Open video with OpenCV for metadata
         cap = cv2.VideoCapture(str(video_path))
 
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video file: {video_path}")
+        try:
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video file: {video_path}")
 
-        metadata = {
-            'path': str(video_path),
-            'fps': cap.get(cv2.CAP_PROP_FPS),
-            'frame_count': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
-            'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-        }
+            metadata = {
+                'path': str(video_path),
+                'fps': cap.get(cv2.CAP_PROP_FPS),
+                'frame_count': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+                'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+            }
 
-        # Validate metadata
-        if metadata['fps'] <= 0:
-            raise ValueError(f"Invalid FPS ({metadata['fps']}) in video: {video_path}")
-        if metadata['frame_count'] <= 0:
-            raise ValueError(f"Invalid frame count ({metadata['frame_count']}) in video: {video_path}")
+            # Validate metadata
+            if metadata['fps'] <= 0:
+                raise ValueError(f"Invalid FPS ({metadata['fps']}) in video: {video_path}")
+            if metadata['frame_count'] <= 0:
+                raise ValueError(f"Invalid frame count ({metadata['frame_count']}) in video: {video_path}")
 
-        metadata['duration_seconds'] = metadata['frame_count'] / metadata['fps']
-        metadata['duration_hours'] = metadata['duration_seconds'] / 3600
-
-        cap.release()
+            metadata['duration_seconds'] = metadata['frame_count'] / metadata['fps']
+            metadata['duration_hours'] = metadata['duration_seconds'] / 3600
+        finally:
+            cap.release()
 
         logger.info(f"Video loaded: {metadata['duration_hours']:.2f}h, "
                    f"{metadata['width']}x{metadata['height']}, "
@@ -147,22 +148,23 @@ class VideoProcessor:
         """
         cap = cv2.VideoCapture(str(video_path))
 
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video: {video_path}")
+        try:
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video: {video_path}")
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps <= 0:
+                raise ValueError(f"Invalid FPS ({fps}) for video: {video_path}")
+
+            frame_number = int(timestamp * fps)
+
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+            ret, frame = cap.read()
+
+            if not ret or frame is None:
+                raise ValueError(f"Could not read frame at timestamp {timestamp}")
+        finally:
             cap.release()
-            raise ValueError(f"Invalid FPS ({fps}) for video: {video_path}")
-
-        frame_number = int(timestamp * fps)
-
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-        ret, frame = cap.read()
-        cap.release()
-
-        if not ret or frame is None:
-            raise ValueError(f"Could not read frame at timestamp {timestamp}")
 
         return frame
 
@@ -182,28 +184,29 @@ class VideoProcessor:
         """
         cap = cv2.VideoCapture(str(video_path))
 
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video: {video_path}")
+        try:
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video: {video_path}")
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps <= 0:
+                raise ValueError(f"Invalid FPS ({fps}) for video: {video_path}")
+
+            start_frame = int(start_time * fps)
+            end_frame = int(end_time * fps)
+
+            frames = []
+            cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+            for frame_idx in range(start_frame, end_frame, step):
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frames.append(frame)
+
+            return np.array(frames)
+        finally:
             cap.release()
-            raise ValueError(f"Invalid FPS ({fps}) for video: {video_path}")
-
-        start_frame = int(start_time * fps)
-        end_frame = int(end_time * fps)
-
-        frames = []
-        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
-        for frame_idx in range(start_frame, end_frame, step):
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frames.append(frame)
-
-        cap.release()
-        return np.array(frames)
 
     def analyze_audio_segments(self, audio: np.ndarray, sr: int,
                               segment_length: float = 1.0) -> np.ndarray:

@@ -577,6 +577,9 @@ class VideoAssembler:
 
         output_path = video_path.parent / f"{video_path.stem}_images{video_path.suffix}"
 
+        cap = None
+        out = None
+        temp_video = None
         try:
             import cv2
             from PIL import Image
@@ -618,9 +621,22 @@ class VideoAssembler:
                 out.write(frame)
                 frame_idx += 1
 
-            cap.release()
-            out.release()
+        except Exception as e:
+            logger.error(f"Error processing video frames: {e}")
+            return video_path
+        finally:
+            # Ensure resources are always released
+            if cap is not None:
+                cap.release()
+            if out is not None:
+                out.release()
 
+        # Only proceed with audio merge if temp video was created successfully
+        if temp_video is None or not temp_video.exists():
+            logger.error("Temporary video was not created successfully")
+            return video_path
+
+        try:
             # Copy audio from original
             video_only = ffmpeg.input(str(temp_video))
             audio_only = ffmpeg.input(str(video_path)).audio
@@ -637,6 +653,9 @@ class VideoAssembler:
 
         except Exception as e:
             logger.error(f"Error applying image overlays: {e}")
+            # Cleanup temp video if it exists
+            if temp_video and temp_video.exists():
+                temp_video.unlink()
             return video_path
 
     def _overlay_image(self, frame: np.ndarray, img_placement, frame_width: int,

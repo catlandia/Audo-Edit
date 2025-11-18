@@ -51,48 +51,51 @@ class VideoEffects:
 
         # Extract clip frames and process
         cap = cv2.VideoCapture(str(input_video))
+        out = None
+        temp_video = None
 
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video: {input_video}")
+        try:
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video: {input_video}")
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps <= 0:
+                raise ValueError(f"Invalid FPS: {fps}")
+
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+            # Prepare output video writer
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            temp_video = self.temp_dir / f"temp_meme_{clip.start_time:.0f}.mp4"
+            out = cv2.VideoWriter(str(temp_video), fourcc, fps, (width, height))
+
+            # Calculate frame range
+            start_frame = int(clip.start_time * fps)
+            end_frame = int(clip.end_time * fps)
+
+            # Process frames
+            cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+            for frame_idx in tqdm(range(start_frame, end_frame),
+                                 desc=f"Processing clip", leave=False):
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                # Calculate current timestamp
+                current_time = frame_idx / fps
+
+                # Check if any memes should be displayed at this timestamp
+                for meme in meme_inserts:
+                    if meme.timestamp <= current_time < meme.timestamp + meme.duration:
+                        frame = self._apply_meme_to_frame(frame, meme)
+
+                out.write(frame)
+        finally:
             cap.release()
-            raise ValueError(f"Invalid FPS: {fps}")
-
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        # Prepare output video writer
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        temp_video = self.temp_dir / f"temp_meme_{clip.start_time:.0f}.mp4"
-        out = cv2.VideoWriter(str(temp_video), fourcc, fps, (width, height))
-
-        # Calculate frame range
-        start_frame = int(clip.start_time * fps)
-        end_frame = int(clip.end_time * fps)
-
-        # Process frames
-        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
-        for frame_idx in tqdm(range(start_frame, end_frame),
-                             desc=f"Processing clip", leave=False):
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            # Calculate current timestamp
-            current_time = frame_idx / fps
-
-            # Check if any memes should be displayed at this timestamp
-            for meme in meme_inserts:
-                if meme.timestamp <= current_time < meme.timestamp + meme.duration:
-                    frame = self._apply_meme_to_frame(frame, meme)
-
-            out.write(frame)
-
-        cap.release()
-        out.release()
+            if out is not None:
+                out.release()
 
         # Re-encode with audio
         self._add_audio_to_video(input_video, temp_video, output_path,
