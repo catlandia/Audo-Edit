@@ -81,22 +81,34 @@ def print_header(text: str) -> None:
 
 def print_success(text: str) -> None:
     """Print success message."""
-    print(f"{Fore.GREEN}✓ {text}{Style.RESET_ALL}")
+    try:
+        print(f"{Fore.GREEN}✓ {text}{Style.RESET_ALL}")
+    except UnicodeEncodeError:
+        print(f"{Fore.GREEN}[OK] {text}{Style.RESET_ALL}")
 
 
 def print_error(text: str) -> None:
     """Print error message."""
-    print(f"{Fore.RED}✗ {text}{Style.RESET_ALL}")
+    try:
+        print(f"{Fore.RED}✗ {text}{Style.RESET_ALL}")
+    except UnicodeEncodeError:
+        print(f"{Fore.RED}[ERROR] {text}{Style.RESET_ALL}")
 
 
 def print_warning(text: str) -> None:
     """Print warning message."""
-    print(f"{Fore.YELLOW}⚠ {text}{Style.RESET_ALL}")
+    try:
+        print(f"{Fore.YELLOW}⚠ {text}{Style.RESET_ALL}")
+    except UnicodeEncodeError:
+        print(f"{Fore.YELLOW}[WARNING] {text}{Style.RESET_ALL}")
 
 
 def print_info(text: str) -> None:
     """Print info message."""
-    print(f"{Fore.BLUE}ℹ {text}{Style.RESET_ALL}")
+    try:
+        print(f"{Fore.BLUE}ℹ {text}{Style.RESET_ALL}")
+    except UnicodeEncodeError:
+        print(f"{Fore.BLUE}[INFO] {text}{Style.RESET_ALL}")
 
 
 def print_clips_summary(clips, video_duration: float) -> None:
