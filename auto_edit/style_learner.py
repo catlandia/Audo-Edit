@@ -115,7 +115,46 @@ class StyleLearner:
             pickle.dump(example_data, f)
 
         logger.info(f"Training example saved: {example_path}")
+
+        # Update manifest
+        self._update_training_manifest(raw_video, edited_video)
+
         return True
+
+    def _update_training_manifest(self, raw_video: str, edited_video: str) -> None:
+        """
+        Update the training manifest file with newly trained video.
+
+        Creates a human-readable text file listing all trained videos.
+        """
+        manifest_path = self.training_data_dir / 'training_manifest.txt'
+        self.training_data_dir.mkdir(parents=True, exist_ok=True)
+
+        # Read existing manifest
+        trained_videos = set()
+        if manifest_path.exists():
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        trained_videos.add(line)
+
+        # Add new video
+        video_name = Path(raw_video).name
+        trained_videos.add(video_name)
+
+        # Write updated manifest
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            f.write("# Auto Edit - Training Manifest\n")
+            f.write("# This file tracks which videos have been trained on\n")
+            f.write("# Each line is a video filename that the AI has learned from\n")
+            f.write(f"# Total trained: {len(trained_videos)}\n")
+            f.write("#\n\n")
+
+            for video in sorted(trained_videos):
+                f.write(f"{video}\n")
+
+        logger.info(f"Training manifest updated: {len(trained_videos)} videos tracked")
 
     def is_pair_trained(self, raw_video: str, edited_video: str) -> bool:
         """

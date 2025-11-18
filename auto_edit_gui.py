@@ -186,7 +186,12 @@ class AutoEditGUI:
         notebook.add(advanced_frame, text="Advanced Settings")
         self.setup_advanced_tab(advanced_frame)
 
-        # Tab 3: Output Log
+        # Tab 3: AI Training
+        training_frame = ttk.Frame(notebook, padding="10")
+        notebook.add(training_frame, text="AI Training")
+        self.setup_training_tab(training_frame)
+
+        # Tab 4: Output Log
         log_frame = ttk.Frame(notebook, padding="10")
         notebook.add(log_frame, text="Output Log")
         self.setup_log_tab(log_frame)
@@ -469,6 +474,89 @@ To edit advanced settings:
             command=self.open_readme
         ).pack(side=tk.LEFT, padx=5)
 
+    def setup_training_tab(self, parent):
+        """Setup the AI training tab"""
+        # Title and description
+        title = ttk.Label(parent, text="AI Style Training", font=("TkDefaultFont", 14, "bold"))
+        title.pack(pady=(0, 10))
+
+        info_text = """Train Auto Edit to learn YOUR editing style!
+
+How it works:
+1. Put original videos in learning/original/
+2. Put your edited versions in learning/edited/ (same filename!)
+3. Click 'Train AI' button below
+4. AI learns your preferences and applies them to future videos
+
+The AI will:
+- Learn which moments you keep vs cut
+- Learn your preferred clip lengths
+- Learn your pacing and rhythm
+- Remember what types of action you prefer
+
+Training Status:"""
+
+        info_label = ttk.Label(parent, text=info_text, justify=tk.LEFT)
+        info_label.pack(pady=(0, 10), padx=10)
+
+        # Status frame
+        status_frame = ttk.LabelFrame(parent, text="Training Status", padding="10")
+        status_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        self.training_status_label = ttk.Label(status_frame, text="Loading...", justify=tk.LEFT)
+        self.training_status_label.pack()
+
+        # Buttons frame
+        button_frame = ttk.Frame(parent)
+        button_frame.pack(fill=tk.X, pady=10)
+
+        ttk.Button(
+            button_frame,
+            text="🔄 Refresh Status",
+            command=self.refresh_training_status
+        ).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="🧠 Train AI",
+            command=self.train_ai
+        ).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="📂 Open Learning Folder",
+            command=self.open_learning_folder
+        ).pack(side=tk.LEFT, padx=5)
+
+        # Instructions frame
+        instructions_frame = ttk.LabelFrame(parent, text="Quick Guide", padding="10")
+        instructions_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        instructions = """Step-by-step:
+
+1. Create video pairs:
+   - Copy original video to learning/original/my_video.mp4
+   - Copy your edited version to learning/edited/my_video.mp4
+   - Filenames MUST match!
+
+2. Repeat for 5-10 videos (more = better AI)
+
+3. Click 'Train AI' button above
+
+4. After training, change mode:
+   - Go to Basic Settings tab
+   - Set 'Editing Mode' to 'My Style'
+   - Process videos - they'll be edited YOUR way!
+
+Tip: You can add more videos anytime and retrain.
+     The AI will only train on NEW videos you add!"""
+
+        instructions_label = ttk.Label(instructions_frame, text=instructions, justify=tk.LEFT)
+        instructions_label.pack()
+
+        # Initial status load
+        self.refresh_training_status()
+
     def setup_log_tab(self, parent):
         """Setup the log output tab"""
         # Log text area
@@ -678,6 +766,155 @@ To edit advanced settings:
             os.startfile(str(readme_path.absolute()))
         else:
             messagebox.showinfo("Info", "README.md not found in current directory")
+
+    def open_learning_folder(self):
+        """Open the learning folder in file explorer"""
+        learning_dir = Path("learning")
+        learning_dir.mkdir(exist_ok=True)
+        (learning_dir / "original").mkdir(exist_ok=True)
+        (learning_dir / "edited").mkdir(exist_ok=True)
+        os.startfile(str(learning_dir.absolute()))
+
+    def refresh_training_status(self):
+        """Refresh the training status display"""
+        try:
+            from auto_edit import Config
+            from auto_edit.style_learner import StyleLearner
+
+            cfg = Config('config.yaml')
+            learner = StyleLearner(cfg)
+
+            # Scan for pairs
+            pairs = learner.scan_learning_folder()
+
+            # Count trained pairs
+            trained_count = 0
+            untrained_count = 0
+            trained_names = []
+            untrained_names = []
+
+            for orig, edit in pairs:
+                if learner.is_pair_trained(orig, edit):
+                    trained_count += 1
+                    trained_names.append(Path(orig).name)
+                else:
+                    untrained_count += 1
+                    untrained_names.append(Path(orig).name)
+
+            # Check if model exists
+            model_exists = learner.load_model()
+
+            # Build status text
+            status = f"Model Status: {'✅ Trained' if model_exists else '❌ Not trained'}\n"
+            status += f"Total video pairs found: {len(pairs)}\n"
+            status += f"Already trained: {trained_count}\n"
+            status += f"Ready to train: {untrained_count}\n\n"
+
+            if trained_names:
+                status += "Trained videos:\n"
+                for name in trained_names[:5]:  # Show first 5
+                    status += f"  ✓ {name}\n"
+                if len(trained_names) > 5:
+                    status += f"  ... and {len(trained_names) - 5} more\n"
+                status += "\n"
+
+            if untrained_names:
+                status += "Ready to train:\n"
+                for name in untrained_names[:5]:  # Show first 5
+                    status += f"  + {name}\n"
+                if len(untrained_names) > 5:
+                    status += f"  ... and {len(untrained_names) - 5} more\n"
+            else:
+                if len(pairs) > 0:
+                    status += "All videos already trained!\nAdd new videos to continue learning."
+                else:
+                    status += "No video pairs found.\nAdd videos to learning/original/ and learning/edited/"
+
+            self.training_status_label.config(text=status)
+
+        except Exception as e:
+            self.training_status_label.config(text=f"Error loading status:\n{str(e)}")
+
+    def train_ai(self):
+        """Train the AI model"""
+        try:
+            result = messagebox.askyesno(
+                "Train AI",
+                "Start AI training?\n\nThis will:\n"
+                "- Scan learning folder for video pairs\n"
+                "- Train only on NEW untrained videos\n"
+                "- Save the trained model\n\n"
+                "Training may take a few minutes."
+            )
+
+            if not result:
+                return
+
+            self.log("=" * 60)
+            self.log("Starting AI Training...")
+            self.log("=" * 60)
+
+            # Run training in background
+            cmd = [sys.executable, "auto_edit.py", "train-auto"]
+
+            # Start processing thread
+            def run_training():
+                try:
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        universal_newlines=True,
+                        bufsize=1
+                    )
+
+                    for line in process.stdout:
+                        self.log(line.rstrip())
+
+                    process.wait()
+
+                    if process.returncode == 0:
+                        self.root.after(0, lambda: self.training_complete_success())
+                    else:
+                        self.root.after(0, lambda: self.training_complete_error())
+
+                except Exception as e:
+                    self.root.after(0, lambda: self.training_complete_error(str(e)))
+
+            thread = threading.Thread(target=run_training, daemon=True)
+            thread.start()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to start training:\n{str(e)}")
+
+    def training_complete_success(self):
+        """Handle successful training completion"""
+        self.log("\n✓ Training Complete!")
+        self.refresh_training_status()
+        messagebox.showinfo(
+            "Training Complete",
+            "AI training successful!\n\n"
+            "To use your trained style:\n"
+            "1. Go to Basic Settings tab\n"
+            "2. Set 'Editing Mode' to 'My Style'\n"
+            "3. Process your videos!"
+        )
+
+    def training_complete_error(self, error=None):
+        """Handle training error"""
+        self.log("\n✗ Training Failed!")
+        if error:
+            self.log(f"Error: {error}")
+        messagebox.showerror(
+            "Training Failed",
+            "AI training failed!\n\n"
+            "Check the Output Log tab for details.\n\n"
+            "Common issues:\n"
+            "- Need at least 5 video pairs\n"
+            "- Filenames must match in both folders\n"
+            "- Videos must be valid formats"
+        )
+        self.refresh_training_status()
 
     def log(self, message):
         """Add message to log"""
