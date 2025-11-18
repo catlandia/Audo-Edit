@@ -501,10 +501,13 @@ Training Status:"""
 
         # Status frame
         status_frame = ttk.LabelFrame(parent, text="Training Status", padding="10")
-        status_frame.pack(fill=tk.X, padx=10, pady=10)
+        status_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.training_status_label = ttk.Label(status_frame, text="Loading...", justify=tk.LEFT)
-        self.training_status_label.pack()
+        # Use Text widget instead of Label for better display
+        self.training_status_text = tk.Text(status_frame, height=15, width=60, wrap=tk.WORD)
+        self.training_status_text.pack(fill=tk.BOTH, expand=True)
+        self.training_status_text.insert("1.0", "Loading training status...")
+        self.training_status_text.config(state=tk.DISABLED)
 
         # Buttons frame
         button_frame = ttk.Frame(parent)
@@ -554,8 +557,8 @@ Tip: You can add more videos anytime and retrain.
         instructions_label = ttk.Label(instructions_frame, text=instructions, justify=tk.LEFT)
         instructions_label.pack()
 
-        # Initial status load
-        self.refresh_training_status()
+        # Initial status load (delayed to ensure log widget is ready)
+        self.root.after(100, self.refresh_training_status)
 
     def setup_log_tab(self, parent):
         """Setup the log output tab"""
@@ -778,7 +781,17 @@ Tip: You can add more videos anytime and retrain.
     def refresh_training_status(self):
         """Refresh the training status display"""
         try:
-            from auto_edit import Config
+            # Ensure learning folders exist
+            learning_dir = Path("learning")
+            learning_dir.mkdir(exist_ok=True)
+            (learning_dir / "original").mkdir(exist_ok=True)
+            (learning_dir / "edited").mkdir(exist_ok=True)
+
+            # Import here to avoid circular imports
+            import sys
+            sys.path.insert(0, str(Path.cwd()))
+
+            from auto_edit.config import Config
             from auto_edit.style_learner import StyleLearner
 
             cfg = Config('config.yaml')
@@ -805,7 +818,7 @@ Tip: You can add more videos anytime and retrain.
             model_exists = learner.load_model()
 
             # Build status text
-            status = f"Model Status: {'✅ Trained' if model_exists else '❌ Not trained'}\n"
+            status = f"Model Status: {'Trained ✅' if model_exists else 'Not trained ❌'}\n"
             status += f"Total video pairs found: {len(pairs)}\n"
             status += f"Already trained: {trained_count}\n"
             status += f"Ready to train: {untrained_count}\n\n"
@@ -828,12 +841,38 @@ Tip: You can add more videos anytime and retrain.
                 if len(pairs) > 0:
                     status += "All videos already trained!\nAdd new videos to continue learning."
                 else:
-                    status += "No video pairs found.\nAdd videos to learning/original/ and learning/edited/"
+                    status += "No video pairs found.\n\n"
+                    status += "To start training:\n"
+                    status += "1. Click 'Open Learning Folder' button\n"
+                    status += "2. Put videos in original/ folder\n"
+                    status += "3. Put edits in edited/ folder\n"
+                    status += "   (same filenames!)\n"
+                    status += "4. Click 'Refresh Status' to see them\n"
+                    status += "5. Click 'Train AI' to train!"
 
-            self.training_status_label.config(text=status)
+            # Update text widget
+            self.training_status_text.config(state=tk.NORMAL)
+            self.training_status_text.delete("1.0", tk.END)
+            self.training_status_text.insert("1.0", status)
+            self.training_status_text.config(state=tk.DISABLED)
+            self.log(f"Training status refreshed: {len(pairs)} pairs found")
 
+        except ImportError as e:
+            error_msg = f"Import Error:\n{str(e)}\n\nMake sure auto_edit module is installed."
+            self.training_status_text.config(state=tk.NORMAL)
+            self.training_status_text.delete("1.0", tk.END)
+            self.training_status_text.insert("1.0", error_msg)
+            self.training_status_text.config(state=tk.DISABLED)
+            self.log(f"Error refreshing status: {str(e)}")
         except Exception as e:
-            self.training_status_label.config(text=f"Error loading status:\n{str(e)}")
+            import traceback
+            error_msg = f"Error loading status:\n{str(e)}\n\nSee Output Log for details."
+            self.training_status_text.config(state=tk.NORMAL)
+            self.training_status_text.delete("1.0", tk.END)
+            self.training_status_text.insert("1.0", error_msg)
+            self.training_status_text.config(state=tk.DISABLED)
+            self.log(f"Error refreshing training status:\n{traceback.format_exc()}")
+
 
     def train_ai(self):
         """Train the AI model"""
@@ -918,9 +957,16 @@ Tip: You can add more videos anytime and retrain.
 
     def log(self, message):
         """Add message to log"""
-        self.log_text.insert(tk.END, message + "\n")
-        self.log_text.see(tk.END)
-        self.root.update_idletasks()
+        try:
+            if hasattr(self, 'log_text') and self.log_text:
+                self.log_text.insert(tk.END, message + "\n")
+                self.log_text.see(tk.END)
+                self.root.update_idletasks()
+            else:
+                # Log widget not ready yet, print to console
+                print(f"[Log] {message}")
+        except Exception as e:
+            print(f"[Log Error] {message} (Error: {e})")
 
     def clear_log(self):
         """Clear the log"""
