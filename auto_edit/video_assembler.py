@@ -49,9 +49,12 @@ class VideoAssembler:
         if not clips:
             raise ValueError("No clips provided for assembly")
 
+        # Ensure output_path is a Path object
         if output_path is None:
             video_name = Path(input_video).stem
             output_path = self.output_dir / f"{video_name}_highlights.mp4"
+        else:
+            output_path = Path(output_path)
 
         logger.info(f"Assembling {len(clips)} clips into: {output_path}")
 
