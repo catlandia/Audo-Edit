@@ -30,6 +30,13 @@ class AutoEditGUI:
         self.memes_enabled = tk.BooleanVar(value=True)
         self.assets_enabled = tk.BooleanVar(value=False)
 
+        # New variables for advanced features
+        self.editing_mode = tk.StringVar(value="general_interest")
+        self.memes_folder = tk.StringVar(value="./memes")
+        self.music_folder = tk.StringVar(value="./music")
+        self.sounds_folder = tk.StringVar(value="./sounds")
+        self.images_folder = tk.StringVar(value="./images")
+
         self.processing = False
         self.process = None
 
@@ -44,19 +51,28 @@ class AutoEditGUI:
         """Load configuration from config.yaml"""
         try:
             if self.config_path.exists():
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
                     self.target_duration.set(config.get('output', {}).get('target_duration_minutes', 20))
                     self.memes_enabled.set(config.get('memes', {}).get('enabled', True))
                     self.assets_enabled.set(config.get('assets', {}).get('enabled', False))
+
+                    # Load editing mode
+                    self.editing_mode.set(config.get('active_mode', 'general_interest'))
+
+                    # Load custom folders
+                    self.memes_folder.set(config.get('memes', {}).get('meme_library', './memes'))
+                    self.music_folder.set(config.get('assets', {}).get('music_folder', './music'))
+                    self.sounds_folder.set(config.get('assets', {}).get('sounds_folder', './sounds'))
+                    self.images_folder.set(config.get('assets', {}).get('images_folder', './images'))
         except Exception as e:
-            self.log(f"Warning: Could not load config: {e}")
+            print(f"Warning: Could not load config: {e}")
 
     def save_config(self):
         """Save current settings to config.yaml"""
         try:
             if self.config_path.exists():
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
 
                 # Update config
@@ -67,14 +83,21 @@ class AutoEditGUI:
                 if 'memes' not in config:
                     config['memes'] = {}
                 config['memes']['enabled'] = self.memes_enabled.get()
+                config['memes']['meme_library'] = self.memes_folder.get()
 
                 if 'assets' not in config:
                     config['assets'] = {}
                 config['assets']['enabled'] = self.assets_enabled.get()
+                config['assets']['music_folder'] = self.music_folder.get()
+                config['assets']['sounds_folder'] = self.sounds_folder.get()
+                config['assets']['images_folder'] = self.images_folder.get()
+
+                # Save editing mode
+                config['active_mode'] = self.editing_mode.get()
 
                 # Save config
-                with open(self.config_path, 'w') as f:
-                    yaml.dump(config, f, default_flow_style=False)
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
                 self.log("Settings saved to config.yaml")
         except Exception as e:
@@ -219,6 +242,33 @@ class AutoEditGUI:
             variable=self.verbose_mode
         ).pack(anchor=tk.W, pady=2)
 
+        # Editing Mode
+        mode_frame = ttk.LabelFrame(parent, text="Editing Mode", padding="10")
+        mode_frame.pack(fill=tk.X, pady=5)
+
+        ttk.Label(mode_frame, text="Select how the AI picks clips:").pack(anchor=tk.W, pady=(0, 5))
+
+        ttk.Radiobutton(
+            mode_frame,
+            text="General Interest (Default - works for everyone)",
+            variable=self.editing_mode,
+            value="general_interest"
+        ).pack(anchor=tk.W, pady=2)
+
+        ttk.Radiobutton(
+            mode_frame,
+            text="My Style (Learns your preferences - needs training)",
+            variable=self.editing_mode,
+            value="my_style"
+        ).pack(anchor=tk.W, pady=2)
+
+        ttk.Radiobutton(
+            mode_frame,
+            text="Hybrid (Mix of both - best after training)",
+            variable=self.editing_mode,
+            value="hybrid"
+        ).pack(anchor=tk.W, pady=2)
+
         # Features
         features_frame = ttk.LabelFrame(parent, text="Features", padding="10")
         features_frame.pack(fill=tk.X, pady=5)
@@ -238,6 +288,45 @@ class AutoEditGUI:
         ttk.Label(
             features_frame,
             text="Note: Thumbnails and sound clips are always extracted",
+            font=("Arial", 8),
+            foreground="gray"
+        ).pack(anchor=tk.W, pady=(5, 0))
+
+        # Custom Folders
+        folders_frame = ttk.LabelFrame(parent, text="Custom Asset Folders (Optional)", padding="10")
+        folders_frame.pack(fill=tk.X, pady=5)
+
+        # Memes folder
+        memes_row = ttk.Frame(folders_frame)
+        memes_row.pack(fill=tk.X, pady=2)
+        ttk.Label(memes_row, text="Memes:", width=10).pack(side=tk.LEFT)
+        ttk.Entry(memes_row, textvariable=self.memes_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(memes_row, text="Browse...", command=self.browse_memes_folder).pack(side=tk.LEFT)
+
+        # Sounds folder
+        sounds_row = ttk.Frame(folders_frame)
+        sounds_row.pack(fill=tk.X, pady=2)
+        ttk.Label(sounds_row, text="Sounds:", width=10).pack(side=tk.LEFT)
+        ttk.Entry(sounds_row, textvariable=self.sounds_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(sounds_row, text="Browse...", command=self.browse_sounds_folder).pack(side=tk.LEFT)
+
+        # Music folder
+        music_row = ttk.Frame(folders_frame)
+        music_row.pack(fill=tk.X, pady=2)
+        ttk.Label(music_row, text="Music:", width=10).pack(side=tk.LEFT)
+        ttk.Entry(music_row, textvariable=self.music_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(music_row, text="Browse...", command=self.browse_music_folder).pack(side=tk.LEFT)
+
+        # Images folder
+        images_row = ttk.Frame(folders_frame)
+        images_row.pack(fill=tk.X, pady=2)
+        ttk.Label(images_row, text="Images:", width=10).pack(side=tk.LEFT)
+        ttk.Entry(images_row, textvariable=self.images_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(images_row, text="Browse...", command=self.browse_images_folder).pack(side=tk.LEFT)
+
+        ttk.Label(
+            folders_frame,
+            text="Leave as default unless you want to use custom folders for your assets",
             font=("Arial", 8),
             foreground="gray"
         ).pack(anchor=tk.W, pady=(5, 0))
@@ -347,6 +436,46 @@ To edit advanced settings:
         if folder:
             self.output_path.set(folder)
             self.log(f"Output folder: {folder}")
+
+    def browse_memes_folder(self):
+        """Browse for custom memes folder"""
+        folder = filedialog.askdirectory(
+            title="Choose Memes Folder",
+            initialdir=self.memes_folder.get()
+        )
+        if folder:
+            self.memes_folder.set(folder)
+            self.log(f"Memes folder: {folder}")
+
+    def browse_sounds_folder(self):
+        """Browse for custom sounds folder"""
+        folder = filedialog.askdirectory(
+            title="Choose Sounds Folder",
+            initialdir=self.sounds_folder.get()
+        )
+        if folder:
+            self.sounds_folder.set(folder)
+            self.log(f"Sounds folder: {folder}")
+
+    def browse_music_folder(self):
+        """Browse for custom music folder"""
+        folder = filedialog.askdirectory(
+            title="Choose Music Folder",
+            initialdir=self.music_folder.get()
+        )
+        if folder:
+            self.music_folder.set(folder)
+            self.log(f"Music folder: {folder}")
+
+    def browse_images_folder(self):
+        """Browse for custom images folder"""
+        folder = filedialog.askdirectory(
+            title="Choose Images Folder",
+            initialdir=self.images_folder.get()
+        )
+        if folder:
+            self.images_folder.set(folder)
+            self.log(f"Images folder: {folder}")
 
     def open_output_folder(self):
         """Open the output folder in file explorer"""
