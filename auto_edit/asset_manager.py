@@ -128,23 +128,36 @@ class AssetManager:
             logger.debug(f"Music directory does not exist: {self.music_dir}")
             return
 
-        # Load pool music
-        pool_dir = self.music_dir / "pool"
-        if pool_dir.exists():
-            for file in pool_dir.glob("*"):
-                if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']:
-                    asset = self._parse_music_asset(file, required=False)
-                    self.music_pool.append(asset)
-                    logger.debug(f"Loaded music pool: {asset.name}")
+        # Check if force_all_music is enabled
+        force_all = self.config.get('assets', {}).get('force_all_music', False)
 
-        # Load required music
-        required_dir = self.music_dir / "required"
-        if required_dir.exists():
-            for file in required_dir.glob("*"):
+        if force_all:
+            # Force ALL mode: Load all music from main directory as required
+            logger.info("Force ALL Music enabled - all music will be required")
+            for file in self.music_dir.glob("*"):
                 if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']:
                     asset = self._parse_music_asset(file, required=True)
                     self.music_required.append(asset)
-                    logger.debug(f"Loaded music required: {asset.name}")
+                    logger.debug(f"Loaded music (forced required): {asset.name}")
+        else:
+            # Normal mode: Use pool/required subfolders
+            # Load pool music
+            pool_dir = self.music_dir / "pool"
+            if pool_dir.exists():
+                for file in pool_dir.glob("*"):
+                    if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']:
+                        asset = self._parse_music_asset(file, required=False)
+                        self.music_pool.append(asset)
+                        logger.debug(f"Loaded music pool: {asset.name}")
+
+            # Load required music
+            required_dir = self.music_dir / "required"
+            if required_dir.exists():
+                for file in required_dir.glob("*"):
+                    if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']:
+                        asset = self._parse_music_asset(file, required=True)
+                        self.music_required.append(asset)
+                        logger.debug(f"Loaded music required: {asset.name}")
 
     def _parse_music_asset(self, file: Path, required: bool) -> MusicAsset:
         """Parse a music file and extract metadata from filename"""
@@ -171,23 +184,36 @@ class AssetManager:
             logger.debug(f"Sounds directory does not exist: {self.sounds_dir}")
             return
 
-        # Load pool sounds
-        pool_dir = self.sounds_dir / "pool"
-        if pool_dir.exists():
-            for file in pool_dir.glob("*"):
-                if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a']:
-                    asset = self._parse_sound_asset(file, required=False)
-                    self.sounds_pool.append(asset)
-                    logger.debug(f"Loaded sound pool: {asset.name}")
+        # Check if force_all_sounds is enabled
+        force_all = self.config.get('assets', {}).get('force_all_sounds', False)
 
-        # Load required sounds
-        required_dir = self.sounds_dir / "required"
-        if required_dir.exists():
-            for file in required_dir.glob("*"):
+        if force_all:
+            # Force ALL mode: Load all sounds from main directory as required
+            logger.info("Force ALL Sounds enabled - all sounds will be required")
+            for file in self.sounds_dir.glob("*"):
                 if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a']:
                     asset = self._parse_sound_asset(file, required=True)
                     self.sounds_required.append(asset)
-                    logger.debug(f"Loaded sound required: {asset.name}")
+                    logger.debug(f"Loaded sound (forced required): {asset.name}")
+        else:
+            # Normal mode: Use pool/required subfolders
+            # Load pool sounds
+            pool_dir = self.sounds_dir / "pool"
+            if pool_dir.exists():
+                for file in pool_dir.glob("*"):
+                    if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a']:
+                        asset = self._parse_sound_asset(file, required=False)
+                        self.sounds_pool.append(asset)
+                        logger.debug(f"Loaded sound pool: {asset.name}")
+
+            # Load required sounds
+            required_dir = self.sounds_dir / "required"
+            if required_dir.exists():
+                for file in required_dir.glob("*"):
+                    if file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a']:
+                        asset = self._parse_sound_asset(file, required=True)
+                        self.sounds_required.append(asset)
+                        logger.debug(f"Loaded sound required: {asset.name}")
 
     def _parse_sound_asset(self, file: Path, required: bool) -> SoundAsset:
         """Parse a sound file and extract metadata from filename"""
@@ -220,23 +246,36 @@ class AssetManager:
             logger.debug(f"Images directory does not exist: {self.images_dir}")
             return
 
-        # Load pool images
-        pool_dir = self.images_dir / "pool"
-        if pool_dir.exists():
-            for file in pool_dir.glob("*"):
-                if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
-                    asset = self._parse_image_asset(file, required=False)
-                    self.images_pool.append(asset)
-                    logger.debug(f"Loaded image pool: {asset.name}")
+        # Check if force_all_images is enabled
+        force_all = self.config.get('assets', {}).get('force_all_images', False)
 
-        # Load required images
-        required_dir = self.images_dir / "required"
-        if required_dir.exists():
-            for file in required_dir.glob("*"):
+        if force_all:
+            # Force ALL mode: Load all images from main directory as required
+            logger.info("Force ALL Images enabled - all images will be required")
+            for file in self.images_dir.glob("*"):
                 if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
                     asset = self._parse_image_asset(file, required=True)
                     self.images_required.append(asset)
-                    logger.debug(f"Loaded image required: {asset.name}")
+                    logger.debug(f"Loaded image (forced required): {asset.name}")
+        else:
+            # Normal mode: Use pool/required subfolders
+            # Load pool images
+            pool_dir = self.images_dir / "pool"
+            if pool_dir.exists():
+                for file in pool_dir.glob("*"):
+                    if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+                        asset = self._parse_image_asset(file, required=False)
+                        self.images_pool.append(asset)
+                        logger.debug(f"Loaded image pool: {asset.name}")
+
+            # Load required images
+            required_dir = self.images_dir / "required"
+            if required_dir.exists():
+                for file in required_dir.glob("*"):
+                    if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+                        asset = self._parse_image_asset(file, required=True)
+                        self.images_required.append(asset)
+                        logger.debug(f"Loaded image required: {asset.name}")
 
     def _parse_image_asset(self, file: Path, required: bool) -> ImageAsset:
         """Parse an image file and extract metadata from filename"""

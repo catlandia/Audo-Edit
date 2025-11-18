@@ -37,6 +37,11 @@ class AutoEditGUI:
         self.sounds_folder = tk.StringVar(value="./sounds")
         self.images_folder = tk.StringVar(value="./images")
 
+        # Force asset options - make ALL items from folders required
+        self.force_all_images = tk.BooleanVar(value=False)
+        self.force_all_sounds = tk.BooleanVar(value=False)
+        self.force_all_music = tk.BooleanVar(value=False)
+
         self.processing = False
         self.process = None
 
@@ -65,6 +70,11 @@ class AutoEditGUI:
                     self.music_folder.set(config.get('assets', {}).get('music_folder', './music'))
                     self.sounds_folder.set(config.get('assets', {}).get('sounds_folder', './sounds'))
                     self.images_folder.set(config.get('assets', {}).get('images_folder', './images'))
+
+                    # Load force asset options
+                    self.force_all_images.set(config.get('assets', {}).get('force_all_images', False))
+                    self.force_all_sounds.set(config.get('assets', {}).get('force_all_sounds', False))
+                    self.force_all_music.set(config.get('assets', {}).get('force_all_music', False))
         except Exception as e:
             print(f"Warning: Could not load config: {e}")
 
@@ -91,6 +101,9 @@ class AutoEditGUI:
                 config['assets']['music_folder'] = self.music_folder.get()
                 config['assets']['sounds_folder'] = self.sounds_folder.get()
                 config['assets']['images_folder'] = self.images_folder.get()
+                config['assets']['force_all_images'] = self.force_all_images.get()
+                config['assets']['force_all_sounds'] = self.force_all_sounds.get()
+                config['assets']['force_all_music'] = self.force_all_music.get()
 
                 # Save editing mode
                 config['active_mode'] = self.editing_mode.get()
@@ -307,26 +320,29 @@ class AutoEditGUI:
         sounds_row = ttk.Frame(folders_frame)
         sounds_row.pack(fill=tk.X, pady=2)
         ttk.Label(sounds_row, text="Sounds:", width=10).pack(side=tk.LEFT)
-        ttk.Entry(sounds_row, textvariable=self.sounds_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        ttk.Button(sounds_row, text="Browse...", command=self.browse_sounds_folder).pack(side=tk.LEFT)
+        ttk.Entry(sounds_row, textvariable=self.sounds_folder, width=30).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(sounds_row, text="Browse...", command=self.browse_sounds_folder).pack(side=tk.LEFT, padx=2)
+        ttk.Checkbutton(sounds_row, text="Force ALL", variable=self.force_all_sounds).pack(side=tk.LEFT, padx=5)
 
         # Music folder
         music_row = ttk.Frame(folders_frame)
         music_row.pack(fill=tk.X, pady=2)
         ttk.Label(music_row, text="Music:", width=10).pack(side=tk.LEFT)
-        ttk.Entry(music_row, textvariable=self.music_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        ttk.Button(music_row, text="Browse...", command=self.browse_music_folder).pack(side=tk.LEFT)
+        ttk.Entry(music_row, textvariable=self.music_folder, width=30).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(music_row, text="Browse...", command=self.browse_music_folder).pack(side=tk.LEFT, padx=2)
+        ttk.Checkbutton(music_row, text="Force ALL", variable=self.force_all_music).pack(side=tk.LEFT, padx=5)
 
         # Images folder
         images_row = ttk.Frame(folders_frame)
         images_row.pack(fill=tk.X, pady=2)
         ttk.Label(images_row, text="Images:", width=10).pack(side=tk.LEFT)
-        ttk.Entry(images_row, textvariable=self.images_folder, width=40).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        ttk.Button(images_row, text="Browse...", command=self.browse_images_folder).pack(side=tk.LEFT)
+        ttk.Entry(images_row, textvariable=self.images_folder, width=30).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(images_row, text="Browse...", command=self.browse_images_folder).pack(side=tk.LEFT, padx=2)
+        ttk.Checkbutton(images_row, text="Force ALL", variable=self.force_all_images).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(
             folders_frame,
-            text="Leave as default unless you want to use custom folders for your assets",
+            text="Tip: 'Force ALL' makes every file in that folder required (ignores pool/required subfolders)",
             font=("Arial", 8),
             foreground="gray"
         ).pack(anchor=tk.W, pady=(5, 0))
