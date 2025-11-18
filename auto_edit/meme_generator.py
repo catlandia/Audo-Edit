@@ -307,10 +307,10 @@ class MemeGenerator:
         try:
             # Try to load a bold font
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-        except:
+        except Exception:
             try:
                 font = ImageFont.truetype("arial.ttf", font_size)
-            except:
+            except Exception:
                 # Fallback to default
                 font = ImageFont.load_default()
 
@@ -427,7 +427,7 @@ class MemeGenerator:
         try:
             font_size = int(height * 0.1)
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-        except:
+        except Exception:
             font = ImageFont.load_default()
 
         # Draw top text

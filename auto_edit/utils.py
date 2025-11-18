@@ -126,7 +126,7 @@ def print_clips_summary(clips, video_duration: float) -> None:
     print_header("Selected Clips Summary")
 
     total_duration = sum(c.duration for c in clips)
-    coverage = (total_duration / video_duration) * 100
+    coverage = (total_duration / video_duration) * 100 if video_duration > 0 else 0
 
     print(f"{Fore.CYAN}Total clips:{Style.RESET_ALL} {len(clips)}")
     print(f"{Fore.CYAN}Total duration:{Style.RESET_ALL} "
