@@ -386,20 +386,34 @@ def train_auto(config: str):
             sys.exit(1)
 
         print_success(f"Found {len(pairs)} matching video pairs")
-        for orig, edit in pairs:
-            print_info(f"  - {Path(orig).name}")
 
-        # Train from the folder
-        success = style_learner.train_from_learning_folder()
+        # Train from the folder (only on new data)
+        result = style_learner.train_from_learning_folder()
 
-        if success:
-            print_success("Style model trained successfully!")
-            stats = style_learner.get_statistics()
-            print_info(f"Trained on {stats['example_count']} examples")
-            print_info("You can now use 'my_style' or 'hybrid' mode in the GUI")
-            print_info("Or run: python auto_edit.py set-mode my_style")
+        # Show what's new vs already trained
+        if result['already_trained'] > 0:
+            print_info(f"\nAlready trained on {result['already_trained']} pairs:")
+            for name in result['already_trained_names']:
+                print_info(f"  - {name} (skipped)")
+
+        if result['new_pairs'] > 0:
+            print_success(f"\nTraining on {result['new_pairs']} NEW pairs:")
+            for name in result['new_pair_names']:
+                print_success(f"  + {name} (added)")
         else:
-            print_error("Training failed. Need at least 5 video pairs.")
+            print_info("\nNo new video pairs to train on")
+            print_info("All videos in learning folder have already been trained")
+
+        if result['success']:
+            print_success("\n=== Training Complete ===")
+            stats = style_learner.get_statistics()
+            print_info(f"Total examples in AI memory: {stats['example_count']}")
+            print_info(f"Model saved to: models/personal_style.pkl")
+            print_info("\nYou can now use 'my_style' mode:")
+            print_info("  GUI: Advanced tab -> Editing Mode -> My Style")
+            print_info("  CLI: python auto_edit.py set-mode my_style")
+        else:
+            print_error("\nTraining failed. Need at least 5 video pairs total.")
 
     except Exception as e:
         print_error(f"Error: {str(e)}")

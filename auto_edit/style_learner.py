@@ -81,7 +81,7 @@ class StyleLearner:
         logger.info(f"Style model saved to: {model_path}")
 
     def add_training_example(self, raw_video: str, edited_video: str,
-                           metadata: Optional[Dict[str, Any]] = None) -> None:
+                           metadata: Optional[Dict[str, Any]] = None) -> bool:
         """
         Add a training example pair.
 
@@ -89,7 +89,15 @@ class StyleLearner:
             raw_video: Path to raw stream VOD
             edited_video: Path to human-edited highlight video
             metadata: Optional metadata about the example
+
+        Returns:
+            True if added, False if already exists
         """
+        # Check if this pair already exists
+        if self.is_pair_trained(raw_video, edited_video):
+            logger.info(f"Skipping already trained pair: {Path(raw_video).name}")
+            return False
+
         logger.info(f"Adding training example:\n  Raw: {raw_video}\n  Edited: {edited_video}")
 
         # Store training example
@@ -107,6 +115,42 @@ class StyleLearner:
             pickle.dump(example_data, f)
 
         logger.info(f"Training example saved: {example_path}")
+        return True
+
+    def is_pair_trained(self, raw_video: str, edited_video: str) -> bool:
+        """
+        Check if a video pair is already in training data.
+
+        Args:
+            raw_video: Path to raw video
+            edited_video: Path to edited video
+
+        Returns:
+            True if pair already exists in training data
+        """
+        # Ensure training data dir exists
+        if not self.training_data_dir.exists():
+            return False
+
+        raw_name = Path(raw_video).name
+        edited_name = Path(edited_video).name
+
+        # Check all existing training examples
+        for example_file in self.training_data_dir.glob('example_*.pkl'):
+            try:
+                with open(example_file, 'rb') as f:
+                    example = pickle.load(f)
+
+                existing_raw = Path(example['raw_video']).name
+                existing_edited = Path(example['edited_video']).name
+
+                if existing_raw == raw_name and existing_edited == edited_name:
+                    return True
+            except Exception as e:
+                logger.warning(f"Error reading {example_file}: {e}")
+                continue
+
+        return False
 
     def train(self, min_examples: Optional[int] = None) -> bool:
         """
@@ -340,15 +384,23 @@ class StyleLearner:
         logger.info(f"Found {len(pairs)} matching video pairs")
         return pairs
 
-    def train_from_learning_folder(self) -> bool:
+    def train_from_learning_folder(self) -> Dict[str, Any]:
         """
         Automatically train from videos in learning folder.
 
         Scans learning/original/ and learning/edited/ for matching pairs,
         adds them as training examples, then trains the model.
+        Only adds NEW pairs that haven't been trained on yet.
 
         Returns:
-            True if training successful
+            Dictionary with training results:
+            {
+                'success': bool,
+                'total_pairs': int,
+                'new_pairs': int,
+                'already_trained': int,
+                'new_pair_names': List[str]
+            }
         """
         logger.info("Scanning learning folder for training pairs...")
 
@@ -358,14 +410,49 @@ class StyleLearner:
         if not pairs:
             logger.warning("No matching video pairs found in learning folder")
             logger.info("Add videos to learning/original/ and learning/edited/ with matching filenames")
-            return False
+            return {
+                'success': False,
+                'total_pairs': 0,
+                'new_pairs': 0,
+                'already_trained': 0,
+                'new_pair_names': []
+            }
 
-        # Add all pairs as training examples
+        # Separate new vs already trained pairs
+        new_pairs = []
+        already_trained = []
+
         for original_path, edited_path in pairs:
-            self.add_training_example(original_path, edited_path)
+            if self.is_pair_trained(original_path, edited_path):
+                already_trained.append(Path(original_path).name)
+            else:
+                new_pairs.append((original_path, edited_path))
 
-        # Train model
-        return self.train()
+        logger.info(f"Found {len(pairs)} total pairs: {len(new_pairs)} new, {len(already_trained)} already trained")
+
+        # Add only new pairs as training examples
+        new_pair_names = []
+        for original_path, edited_path in new_pairs:
+            added = self.add_training_example(original_path, edited_path)
+            if added:
+                new_pair_names.append(Path(original_path).name)
+
+        # Train model if we have enough examples
+        if len(new_pairs) > 0:
+            success = self.train()
+        else:
+            logger.info("No new pairs to train on")
+            # Still return success if we have a trained model
+            success = self.is_trained
+
+        return {
+            'success': success,
+            'total_pairs': len(pairs),
+            'new_pairs': len(new_pairs),
+            'already_trained': len(already_trained),
+            'new_pair_names': new_pair_names,
+            'already_trained_names': already_trained
+        }
 
     def get_statistics(self) -> Dict[str, Any]:
         """
