@@ -154,10 +154,32 @@ class AutoEditGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=1)
 
-        # Tab 1: Basic Settings
-        basic_frame = ttk.Frame(notebook, padding="10")
+        # Tab 1: Basic Settings (with scrolling)
+        basic_frame = ttk.Frame(notebook)
         notebook.add(basic_frame, text="Basic Settings")
-        self.setup_basic_tab(basic_frame)
+
+        # Create canvas and scrollbar for scrolling
+        canvas = tk.Canvas(basic_frame, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(basic_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas, padding="10")
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Enable mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        self.setup_basic_tab(scrollable_frame)
 
         # Tab 2: Advanced Settings
         advanced_frame = ttk.Frame(notebook, padding="10")
@@ -563,48 +585,69 @@ To edit advanced settings:
 
     def toggle_force_sounds(self):
         """Toggle force all sounds setting"""
-        current = self.force_all_sounds.get()
-        self.force_all_sounds.set(not current)
-        self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
+        try:
+            current = self.force_all_sounds.get()
+            self.force_all_sounds.set(not current)
+            self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
+            self.log(f"Force ALL Sounds: {'ON' if self.force_all_sounds.get() else 'OFF'}")
+        except Exception as e:
+            self.log(f"Error toggling force sounds: {e}")
 
     def toggle_force_music(self):
         """Toggle force all music setting"""
-        current = self.force_all_music.get()
-        self.force_all_music.set(not current)
-        self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
+        try:
+            current = self.force_all_music.get()
+            self.force_all_music.set(not current)
+            self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
+            self.log(f"Force ALL Music: {'ON' if self.force_all_music.get() else 'OFF'}")
+        except Exception as e:
+            self.log(f"Error toggling force music: {e}")
 
     def toggle_force_images(self):
         """Toggle force all images setting"""
-        current = self.force_all_images.get()
-        self.force_all_images.set(not current)
-        self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
+        try:
+            current = self.force_all_images.get()
+            self.force_all_images.set(not current)
+            self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
+            self.log(f"Force ALL Images: {'ON' if self.force_all_images.get() else 'OFF'}")
+        except Exception as e:
+            self.log(f"Error toggling force images: {e}")
 
     def update_simple_toggle_button(self, button, state):
         """Update simple toggle button appearance based on state"""
-        if state:
-            button.config(text="ON", relief=tk.SUNKEN, bg="#90EE90")
-        else:
-            button.config(text="OFF", relief=tk.RAISED, bg="#f0f0f0")
+        try:
+            if state:
+                button.config(text="ON", relief=tk.SUNKEN, bg="#90EE90", activebackground="#7CCD7C")
+            else:
+                button.config(text="OFF", relief=tk.RAISED, bg="#f0f0f0", activebackground="#e0e0e0")
+        except Exception as e:
+            print(f"Error updating simple toggle button: {e}")
 
     def update_toggle_button(self, button, state):
         """Update toggle button appearance based on state"""
-        if state:
-            button.config(text="Force ALL: ON", relief=tk.SUNKEN, bg="#90EE90")
-        else:
-            button.config(text="Force ALL: OFF", relief=tk.RAISED, bg="#f0f0f0")
+        try:
+            if state:
+                button.config(text="Force ALL: ON", relief=tk.SUNKEN, bg="#90EE90", activebackground="#7CCD7C")
+            else:
+                button.config(text="Force ALL: OFF", relief=tk.RAISED, bg="#f0f0f0", activebackground="#e0e0e0")
+        except Exception as e:
+            print(f"Error updating toggle button: {e}")
 
     def update_all_toggle_buttons(self):
         """Update all toggle buttons to match current state"""
-        # Simple toggles
-        self.update_simple_toggle_button(self.preview_btn, self.preview_mode.get())
-        self.update_simple_toggle_button(self.verbose_btn, self.verbose_mode.get())
-        self.update_simple_toggle_button(self.memes_btn, self.memes_enabled.get())
-        self.update_simple_toggle_button(self.assets_btn, self.assets_enabled.get())
+        try:
+            # Simple toggles
+            self.update_simple_toggle_button(self.preview_btn, self.preview_mode.get())
+            self.update_simple_toggle_button(self.verbose_btn, self.verbose_mode.get())
+            self.update_simple_toggle_button(self.memes_btn, self.memes_enabled.get())
+            self.update_simple_toggle_button(self.assets_btn, self.assets_enabled.get())
 
-        # Force ALL toggles
-        self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
-        self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
-        self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
+            # Force ALL toggles
+            self.update_toggle_button(self.force_sounds_btn, self.force_all_sounds.get())
+            self.update_toggle_button(self.force_music_btn, self.force_all_music.get())
+            self.update_toggle_button(self.force_images_btn, self.force_all_images.get())
+        except Exception as e:
+            print(f"Error updating all toggle buttons: {e}")
 
     def open_output_folder(self):
         """Open the output folder in file explorer"""
