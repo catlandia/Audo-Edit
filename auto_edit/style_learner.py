@@ -298,6 +298,75 @@ class StyleLearner:
 
         return weights
 
+    def scan_learning_folder(self) -> List[Tuple[str, str]]:
+        """
+        Scan learning folder for matching original/edited pairs.
+
+        Expected structure:
+            learning/
+                original/
+                    video1.mp4
+                    video2.mp4
+                edited/
+                    video1.mp4
+                    video2.mp4
+
+        Returns:
+            List of (original_path, edited_path) tuples
+        """
+        learning_dir = Path('./learning')
+        original_dir = learning_dir / 'original'
+        edited_dir = learning_dir / 'edited'
+
+        # Create directories if they don't exist
+        original_dir.mkdir(parents=True, exist_ok=True)
+        edited_dir.mkdir(parents=True, exist_ok=True)
+
+        # Scan for video files in original folder
+        video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.webm']
+        pairs = []
+
+        for original_file in original_dir.iterdir():
+            if original_file.suffix.lower() in video_extensions:
+                # Look for matching file in edited folder
+                edited_file = edited_dir / original_file.name
+
+                if edited_file.exists():
+                    pairs.append((str(original_file), str(edited_file)))
+                    logger.info(f"Found pair: {original_file.name}")
+                else:
+                    logger.warning(f"No edited version found for: {original_file.name}")
+
+        logger.info(f"Found {len(pairs)} matching video pairs")
+        return pairs
+
+    def train_from_learning_folder(self) -> bool:
+        """
+        Automatically train from videos in learning folder.
+
+        Scans learning/original/ and learning/edited/ for matching pairs,
+        adds them as training examples, then trains the model.
+
+        Returns:
+            True if training successful
+        """
+        logger.info("Scanning learning folder for training pairs...")
+
+        # Scan for pairs
+        pairs = self.scan_learning_folder()
+
+        if not pairs:
+            logger.warning("No matching video pairs found in learning folder")
+            logger.info("Add videos to learning/original/ and learning/edited/ with matching filenames")
+            return False
+
+        # Add all pairs as training examples
+        for original_path, edited_path in pairs:
+            self.add_training_example(original_path, edited_path)
+
+        # Train model
+        return self.train()
+
     def get_statistics(self) -> Dict[str, Any]:
         """
         Get statistics about learned style.

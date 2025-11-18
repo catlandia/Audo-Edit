@@ -353,6 +353,63 @@ def train(config: str):
 
 @cli.command()
 @click.option('--config', '-c', type=click.Path(), default='config.yaml')
+def train_auto(config: str):
+    """
+    Automatically train from learning folder (easy mode).
+
+    Put videos in learning/original/ and learning/edited/ with matching filenames.
+    This command will automatically find pairs and train the model.
+    """
+    setup_logging(level="INFO")
+
+    print_header("Auto-Train from Learning Folder")
+
+    try:
+        cfg = Config(config)
+        style_learner = StyleLearner(cfg)
+
+        print_info("Scanning learning/original/ and learning/edited/ for matching videos...")
+
+        # Scan and show what was found
+        pairs = style_learner.scan_learning_folder()
+
+        if not pairs:
+            print_error("No matching video pairs found!")
+            print_info("Expected folder structure:")
+            print_info("  learning/")
+            print_info("    original/")
+            print_info("      video1.mp4")
+            print_info("      video2.mp4")
+            print_info("    edited/")
+            print_info("      video1.mp4  (same name as original)")
+            print_info("      video2.mp4  (same name as original)")
+            sys.exit(1)
+
+        print_success(f"Found {len(pairs)} matching video pairs")
+        for orig, edit in pairs:
+            print_info(f"  - {Path(orig).name}")
+
+        # Train from the folder
+        success = style_learner.train_from_learning_folder()
+
+        if success:
+            print_success("Style model trained successfully!")
+            stats = style_learner.get_statistics()
+            print_info(f"Trained on {stats['example_count']} examples")
+            print_info("You can now use 'my_style' or 'hybrid' mode in the GUI")
+            print_info("Or run: python auto_edit.py set-mode my_style")
+        else:
+            print_error("Training failed. Need at least 5 video pairs.")
+
+    except Exception as e:
+        print_error(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+@cli.command()
+@click.option('--config', '-c', type=click.Path(), default='config.yaml')
 def style_info(config: str):
     """Show information about trained style model."""
     setup_logging(level="INFO")
