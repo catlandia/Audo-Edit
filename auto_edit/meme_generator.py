@@ -46,12 +46,12 @@ class MemeGenerator:
 
     # Text templates for different moment types
     TEXT_TEMPLATES = {
-        'laughter': ['LMAO', 'DEAD', '💀', 'IM DYING', 'CANT BREATHE'],
+        'laughter': ['LMAO', 'DEAD', 'SKULL', 'IM DYING', 'CANT BREATHE'],
         'shouting': ['AHHH!', 'WHAT!?', 'NO WAY!', 'OMG!', 'BRUH'],
         'excitement': ['LETS GO!', 'POGGERS', 'HYPE!', 'SHEESH', 'W'],
-        'audio_peak': ['LOUD', 'RIP HEADPHONES', '🔊', 'BASS BOOSTED'],
+        'audio_peak': ['LOUD', 'RIP HEADPHONES', 'BASS BOOSTED', 'EARRAPE'],
         'silence_to_chaos': ['WAIT WHAT', 'SUDDENLY', '?!', 'UH OH'],
-        'epic': ['EPIC', 'LEGENDARY', 'INSANE', 'GODLIKE', '🔥'],
+        'epic': ['EPIC', 'LEGENDARY', 'INSANE', 'GODLIKE', 'FIRE'],
     }
 
     def __init__(self, config):
@@ -235,11 +235,11 @@ class MemeGenerator:
         if intensity > 0.9:
             # Super intense - use all caps, multiple exclamation marks
             text = random.choice(templates)
-            if not any(emoji in text for emoji in ['💀', '🔊', '🔥', '?!']):
+            if not any(word in text for word in ['SKULL', 'FIRE', '?!']):
                 text += '!!!'
         elif intensity > 0.7:
             text = random.choice(templates)
-            if '!' not in text and '💀' not in text:
+            if '!' not in text and 'SKULL' not in text:
                 text += '!'
         else:
             text = random.choice(templates)
@@ -475,7 +475,7 @@ class MemeGenerator:
         if output_path is None:
             output_path = self.output_dir / "meme_inserts.txt"
 
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write("Auto Edit - Meme Insertions\n")
             f.write("=" * 80 + "\n\n")
 
