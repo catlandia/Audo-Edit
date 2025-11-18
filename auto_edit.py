@@ -143,7 +143,7 @@ def edit(input_video: str, output: Optional[str], duration: int, mode: str,
         total_duration = sum(c.duration for c in clips)
         compression_ratio = (metadata['duration_seconds'] / total_duration) if total_duration > 0 else 0
         print_info(f"Compression ratio: {compression_ratio:.1f}x "
-                  f"({format_duration(metadata['duration_seconds'])} → "
+                  f"({format_duration(metadata['duration_seconds'])} -> "
                   f"{format_duration(total_duration)})")
 
     except Exception as e:

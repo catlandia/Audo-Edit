@@ -119,7 +119,7 @@ class VideoAssembler:
                 except Exception as e:
                     logger.warning(f"Could not create thumbnail grid: {e}")
 
-            logger.info(f"✓ Extracted {len(thumbnails)} thumbnails")
+            logger.info(f"Extracted {len(thumbnails)} thumbnails")
             return thumbnails
 
         except Exception as e:
@@ -152,7 +152,7 @@ class VideoAssembler:
             # Export sound list
             extractor.export_sound_list(sound_clips)
 
-            logger.info(f"✓ Extracted {len(sound_clips)} sound clips")
+            logger.info(f"Extracted {len(sound_clips)} sound clips")
             return sound_clips
 
         except Exception as e:
@@ -227,7 +227,7 @@ class VideoAssembler:
         # Export meme list
         if all_meme_inserts:
             meme_gen.export_meme_list(all_meme_inserts)
-            logger.info(f"✓ {len(all_meme_inserts)} memes will be inserted")
+            logger.info(f"{len(all_meme_inserts)} memes will be inserted")
 
         # Extract clips with memes
         with open(concat_file, 'w') as f:
@@ -483,7 +483,7 @@ class VideoAssembler:
             import shutil
             shutil.move(str(current_video), str(enhanced_path))
 
-        logger.info(f"✓ Assets applied successfully: {enhanced_path.name}")
+        logger.info(f"Assets applied successfully: {enhanced_path.name}")
         return enhanced_path
 
     def _apply_music_overlay(self, video_path: Path, music_placements: List,
@@ -516,7 +516,7 @@ class VideoAssembler:
 
             output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
 
-            logger.info(f"✓ Music overlay applied")
+            logger.info(f"Music overlay applied")
             return output_path
 
         except Exception as e:
@@ -564,7 +564,7 @@ class VideoAssembler:
 
             output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
 
-            logger.info(f"✓ Sound effects applied")
+            logger.info(f"Sound effects applied")
             return output_path
 
         except Exception as e:
@@ -632,7 +632,7 @@ class VideoAssembler:
             # Cleanup temp
             temp_video.unlink()
 
-            logger.info(f"✓ Image overlays applied")
+            logger.info(f"Image overlays applied")
             return output_path
 
         except Exception as e:
