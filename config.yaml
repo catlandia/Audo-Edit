@@ -80,6 +80,16 @@ output:
   audio_codec: aac
   bitrate: "4M"
 
+  # GPU Hardware Acceleration (for MUCH faster encoding!)
+  # Auto-detects your GPU and uses it if available
+  hardware_acceleration:
+    enabled: true  # Set to false to use CPU only
+    # Priority order: NVIDIA > AMD > Intel > CPU
+    # nvidia: h264_nvenc (RTX/GTX cards)
+    # amd: h264_amf (Radeon cards)
+    # intel: h264_qsv (Intel integrated/Arc graphics)
+    preset: "fast"  # Options: fast, medium, slow (quality vs speed)
+
   # Thumbnail extraction
   extract_thumbnails: true  # Auto-extract thumbnails from clips
   extract_best_frames: false  # Extract visually best frame from each clip (slower)

@@ -27,6 +27,67 @@ class VideoAssembler:
         self.temp_dir = config.get('paths.temp_dir', Path('./temp'))
         self.output_dir = config.get('paths.output_dir', Path('./output'))
 
+        # Detect and cache best video encoder
+        self.video_encoder = self._get_best_encoder()
+
+    def _get_best_encoder(self) -> Dict[str, Any]:
+        """
+        Auto-detect best available video encoder (GPU or CPU).
+
+        Returns:
+            Dictionary with encoder settings
+        """
+        import subprocess
+
+        # Check if hardware acceleration is enabled in config
+        hw_enabled = self.config.get('output.hardware_acceleration.enabled', True)
+        preset = self.config.get('output.hardware_acceleration.preset', 'fast')
+
+        if not hw_enabled:
+            logger.info("Hardware acceleration disabled, using CPU encoder (libx264)")
+            return {
+                'vcodec': 'libx264',
+                'preset': preset,
+                'hardware': False
+            }
+
+        # Test available encoders in priority order
+        encoders_to_test = [
+            ('h264_nvenc', 'NVIDIA GPU'),  # NVIDIA
+            ('h264_amf', 'AMD GPU'),       # AMD
+            ('h264_qsv', 'Intel GPU'),     # Intel QuickSync
+        ]
+
+        for encoder, gpu_name in encoders_to_test:
+            try:
+                # Test if encoder is available
+                result = subprocess.run(
+                    ['ffmpeg', '-hide_banner', '-encoders'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+
+                if encoder in result.stdout:
+                    logger.info(f"GPU encoder detected: {encoder} ({gpu_name}) ✓")
+                    return {
+                        'vcodec': encoder,
+                        'preset': preset,
+                        'hardware': True,
+                        'gpu_type': gpu_name
+                    }
+            except Exception as e:
+                logger.debug(f"Error testing {encoder}: {e}")
+                continue
+
+        # Fallback to CPU
+        logger.info("No GPU encoder found, using CPU encoder (libx264)")
+        return {
+            'vcodec': 'libx264',
+            'preset': preset,
+            'hardware': False
+        }
+
     def assemble_video(self, input_video: str, clips: List[Clip],
                       output_path: Optional[str] = None,
                       audio: Optional[np.ndarray] = None,
@@ -268,7 +329,8 @@ class VideoAssembler:
         try:
             # Get output settings from config
             fps = self.config.get('output.fps', 30)
-            codec = self.config.get('output.codec', 'libx264')
+            codec = self.video_encoder['vcodec']  # Use GPU-accelerated encoder if available
+            preset = self.video_encoder['preset']
             audio_codec = self.config.get('output.audio_codec', 'aac')
             bitrate = self.config.get('output.bitrate', '4M')
 
@@ -281,8 +343,8 @@ class VideoAssembler:
                     acodec=audio_codec,
                     video_bitrate=bitrate,
                     r=fps,
-                    preset='medium',
-                    crf=23
+                    preset=preset,
+                    crf=23 if not self.video_encoder['hardware'] else None
                 )
                 .overwrite_output()
                 .run(capture_stdout=True, capture_stderr=True, quiet=True)
@@ -393,7 +455,8 @@ class VideoAssembler:
                     ffmpeg.input(str(clip2)),
                     v=1, a=1
                 )
-                .output(str(output), vcodec='libx264', acodec='aac')
+                .output(str(output), vcodec=self.video_encoder['vcodec'], acodec='aac',
+                       preset=self.video_encoder['preset'])
                 .overwrite_output()
                 .run(capture_stdout=True, capture_stderr=True, quiet=True)
             )
@@ -642,7 +705,9 @@ class VideoAssembler:
             audio_only = ffmpeg.input(str(video_path)).audio
 
             output = ffmpeg.output(video_only, audio_only, str(output_path),
-                                  vcodec='libx264', acodec='copy')
+                                  vcodec=self.video_encoder['vcodec'],
+                                  preset=self.video_encoder['preset'],
+                                  acodec='copy')
             output.overwrite_output().run(capture_stdout=True, capture_stderr=True, quiet=True)
 
             # Cleanup temp
