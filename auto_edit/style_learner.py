@@ -45,19 +45,38 @@ class StyleLearner:
         if model_path is None:
             model_path = self.models_dir / 'personal_style.pkl'
 
-        model_path = Path(model_path)
+        model_path = Path(model_path).resolve()
+
+        # Security: Validate path is within models directory
+        try:
+            model_path.relative_to(self.models_dir.resolve())
+        except ValueError:
+            logger.error(f"Security: Model path outside models directory: {model_path}")
+            return False
 
         if not model_path.exists():
             logger.warning(f"Model file not found: {model_path}")
             return False
 
         try:
+            # Security warning: pickle.load can execute arbitrary code
+            # Only load pickle files from trusted sources
+            logger.debug(f"Loading pickle model from: {model_path}")
             with open(model_path, 'rb') as f:
                 self.model = pickle.load(f)
+
+            # Validate loaded model structure
+            if not isinstance(self.model, dict):
+                logger.error("Security: Invalid model format detected")
+                self.model = None
+                return False
 
             self.is_trained = True
             logger.info(f"Style model loaded from: {model_path}")
             return True
+        except (pickle.UnpicklingError, EOFError) as e:
+            logger.error(f"Error loading model (corrupted or invalid): {e}")
+            return False
         except Exception as e:
             logger.error(f"Error loading model: {e}")
             return False
@@ -177,8 +196,21 @@ class StyleLearner:
         # Check all existing training examples
         for example_file in self.training_data_dir.glob('example_*.pkl'):
             try:
-                with open(example_file, 'rb') as f:
+                # Security: Validate pickle file path
+                example_file_resolved = example_file.resolve()
+                try:
+                    example_file_resolved.relative_to(self.training_data_dir.resolve())
+                except ValueError:
+                    logger.warning(f"Security: Skipping file outside training dir: {example_file}")
+                    continue
+
+                with open(example_file_resolved, 'rb') as f:
                     example = pickle.load(f)
+
+                # Validate structure
+                if not isinstance(example, dict) or 'raw_video' not in example or 'edited_video' not in example:
+                    logger.warning(f"Invalid example format in {example_file}")
+                    continue
 
                 existing_raw = Path(example['raw_video']).name
                 existing_edited = Path(example['edited_video']).name
@@ -217,15 +249,32 @@ class StyleLearner:
         # Extract features from all examples
         features = []
         for example_file in example_files:
-            with open(example_file, 'rb') as f:
-                example = pickle.load(f)
+            try:
+                # Security: Validate pickle file path
+                example_file_resolved = example_file.resolve()
+                try:
+                    example_file_resolved.relative_to(self.training_data_dir.resolve())
+                except ValueError:
+                    logger.warning(f"Security: Skipping file outside training dir: {example_file}")
+                    continue
 
-            # Extract features (Phase 3 implementation)
-            example_features = self._extract_style_features(
-                example['raw_video'],
-                example['edited_video']
-            )
-            features.append(example_features)
+                with open(example_file_resolved, 'rb') as f:
+                    example = pickle.load(f)
+
+                # Validate structure
+                if not isinstance(example, dict) or 'raw_video' not in example or 'edited_video' not in example:
+                    logger.warning(f"Invalid example format in {example_file}, skipping")
+                    continue
+
+                # Extract features (Phase 3 implementation)
+                example_features = self._extract_style_features(
+                    example['raw_video'],
+                    example['edited_video']
+                )
+                features.append(example_features)
+            except Exception as e:
+                logger.warning(f"Error loading training example {example_file}: {e}")
+                continue
 
         # Train model (placeholder - Phase 3)
         self.model = self._train_model(features)

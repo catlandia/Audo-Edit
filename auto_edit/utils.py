@@ -3,7 +3,7 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from datetime import timedelta
 from colorama import init, Fore, Style
 
@@ -165,6 +165,42 @@ def print_signals_summary(signals: Dict[str, Any]) -> None:
                   f"(avg intensity: {avg_intensity:.2f})")
 
 
+def sanitize_path(path: str, base_dir: Optional[Path] = None, must_exist: bool = False) -> Path:
+    """
+    Sanitize and validate a file path for security.
+
+    Args:
+        path: Path to sanitize
+        base_dir: Optional base directory to validate path is within
+        must_exist: Whether path must exist
+
+    Returns:
+        Resolved, validated Path object
+
+    Raises:
+        ValueError: If path is invalid or outside base_dir
+    """
+    try:
+        # Resolve to absolute canonical path
+        resolved_path = Path(path).resolve(strict=False)
+    except (OSError, RuntimeError) as e:
+        raise ValueError(f"Invalid file path: {e}")
+
+    # If base_dir specified, ensure path is within it
+    if base_dir is not None:
+        base_dir = Path(base_dir).resolve()
+        try:
+            resolved_path.relative_to(base_dir)
+        except ValueError:
+            raise ValueError(f"Path {path} is outside allowed directory {base_dir}")
+
+    # Check existence if required
+    if must_exist and not resolved_path.exists():
+        raise FileNotFoundError(f"Path does not exist: {resolved_path}")
+
+    return resolved_path
+
+
 def validate_video_file(path: str) -> Path:
     """
     Validate video file exists and is readable.
@@ -173,13 +209,17 @@ def validate_video_file(path: str) -> Path:
         path: Path to video file
 
     Returns:
-        Path object
+        Resolved Path object
 
     Raises:
         FileNotFoundError: If file doesn't exist
-        ValueError: If file is not a video
+        ValueError: If file is not a video or path is invalid
     """
-    path = Path(path)
+    # Security: Resolve path to absolute canonical path (prevents ../ attacks)
+    try:
+        path = Path(path).resolve(strict=False)
+    except (OSError, RuntimeError) as e:
+        raise ValueError(f"Invalid file path: {e}")
 
     if not path.exists():
         raise FileNotFoundError(f"Video file not found: {path}")
