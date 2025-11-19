@@ -159,13 +159,28 @@ REM Upgrade pip first
 echo  Upgrading pip...
 python -m pip install --upgrade pip --quiet
 
-REM Install dependencies
+REM Choose installation type
 echo.
-echo  Installing Auto Edit dependencies...
-echo  (This is the longest step - please be patient)
+echo  Choose installation type:
+echo    1. FULL install (includes ML features, ~2GB download)
+echo    2. MINIMAL install (faster, smaller, recommended for most users)
 echo.
+choice /C 12 /N /M "Enter choice (1 or 2): "
+set INSTALL_TYPE=%ERRORLEVEL%
 
-pip install -r requirements.txt
+echo.
+if %INSTALL_TYPE%==1 (
+    echo  Installing FULL dependencies...
+    echo  This will take 5-15 minutes depending on your internet speed
+    echo.
+    pip install -r requirements.txt
+) else (
+    echo  Installing MINIMAL dependencies...
+    echo  This will take 3-8 minutes
+    echo  Note: Style learning features won't be available
+    echo.
+    pip install -r requirements-minimal.txt
+)
 
 if errorlevel 1 (
     color 0C
@@ -176,12 +191,24 @@ if errorlevel 1 (
     echo    - Slow internet connection
     echo    - Antivirus blocking downloads
     echo    - Insufficient disk space
+    echo    - Python version incompatibility
     echo.
-    echo  Try running 'setup_windows.bat' instead for more details.
+    echo  Try the other installation type or check:
+    echo    python check_system.py
     echo.
     pause
     exit /b 1
 )
+
+REM ============================================
+REM RUN SYSTEM CHECK
+REM ============================================
+echo.
+echo  Running system check...
+echo.
+python check_system.py
+echo.
+pause
 
 REM ============================================
 REM SUCCESS!
@@ -220,7 +247,14 @@ echo   2. Select your stream video
 echo   3. Click "Start Processing"
 echo   4. Wait for your highlight video!
 echo.
-echo  See WINDOWS_SETUP.md for more help.
+echo  See README.md for full documentation
+echo.
+echo  ========================================
+echo   TROUBLESHOOTING:
+echo  ========================================
+echo.
+echo   If you have issues, run: python check_system.py
+echo   This will check your system for problems
 echo.
 echo  ========================================
 echo.

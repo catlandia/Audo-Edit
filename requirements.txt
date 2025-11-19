@@ -1,36 +1,55 @@
-# Auto Edit - Video Editing Application Dependencies
+# Auto Edit - Core Dependencies
+# Uses version ranges for better compatibility across systems
+# For minimal install without ML features, see requirements-minimal.txt
 
-# Video Processing
-opencv-python>=4.8.0
-opencv-contrib-python>=4.8.0
-ffmpeg-python>=0.2.0
-moviepy>=1.0.3
+# ============================================
+# CORE VIDEO PROCESSING (Required)
+# ============================================
+# Use opencv-python-headless for servers, opencv-python for desktop
+opencv-python>=4.8.0,<5.0.0
+ffmpeg-python>=0.2.0,<0.3.0
+moviepy>=1.0.3,<2.0.0
 
-# Audio Analysis
-librosa>=0.10.0
-soundfile>=0.12.0
-pydub>=0.25.1
+# ============================================
+# AUDIO ANALYSIS (Required)
+# ============================================
+librosa>=0.10.0,<0.11.0
+soundfile>=0.12.0,<0.13.0
+pydub>=0.25.1,<0.26.0
 
-# Machine Learning & Data Science
-numpy>=1.24.0
-scipy>=1.11.0  # Required for sound extraction peak detection
-scikit-learn>=1.3.0
-torch>=2.0.0
-transformers>=4.30.0
+# ============================================
+# NUMERICAL & SCIENTIFIC (Required)
+# ============================================
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0,<2.0.0
+scikit-learn>=1.3.0,<2.0.0
 
-# Computer Vision & Image Processing
-pillow>=10.0.0
-scikit-image>=0.21.0
+# ============================================
+# IMAGE PROCESSING (Required)
+# ============================================
+pillow>=10.0.0,<11.0.0
+scikit-image>=0.21.0,<0.23.0
 
-# Data Handling
-pandas>=2.0.0
-h5py>=3.9.0
+# ============================================
+# CONFIGURATION & CLI (Required)
+# ============================================
+pyyaml>=6.0,<7.0
+click>=8.1.0,<9.0
+tqdm>=4.65.0,<5.0
+colorama>=0.4.6,<0.5.0
+python-dotenv>=1.0.0,<2.0.0
 
-# Configuration & CLI
-pyyaml>=6.0
-click>=8.1.0
-tqdm>=4.65.0
-colorama>=0.4.6
+# ============================================
+# MACHINE LEARNING (Optional - For Phase 3+)
+# ============================================
+# Uncomment these if you need style learning features
+# These are LARGE downloads and optional for basic usage
+# torch>=2.0.0,<2.2.0
+# transformers>=4.30.0,<5.0.0
 
-# Utilities
-python-dotenv>=1.0.0
+# ============================================
+# DATA HANDLING (Optional)
+# ============================================
+# Uncomment if you need advanced data export features
+# pandas>=2.0.0,<3.0.0
+# h5py>=3.9.0,<4.0.0
